@@ -1,0 +1,156 @@
+import { useState } from 'react';
+import { urlsAPI } from '../services/api';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
+
+interface AddLinkModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+const CATEGORIES = [
+  'uncategorized',
+  'Design',
+  'Development',
+  'Research',
+  'Finance',
+  'Personal',
+];
+
+export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModalProps) {
+  const [title, setTitle] = useState('');
+  const [url, setUrl] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('uncategorized');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    try {
+      await urlsAPI.createUrl({
+        title: title.trim(),
+        url: url.trim(),
+        description: description.trim(),
+        category,
+      });
+      onSuccess();
+      resetForm();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Failed to save link';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setTitle('');
+    setUrl('');
+    setDescription('');
+    setCategory('uncategorized');
+  };
+
+  const handleClose = () => {
+    resetForm();
+    setError('');
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => (!open ? handleClose() : undefined)}>
+      <DialogContent className="sm:max-w-[520px] rounded-3xl border-slate-200 p-7">
+        <DialogHeader>
+          <DialogTitle className="text-3xl">Add New Link</DialogTitle>
+          <DialogDescription>
+            Curate a new resource for your library
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="title">Resource Title</Label>
+            <Input
+              id="title"
+              placeholder="e.g. Modern UI Design Principles"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              className="h-12 border-slate-300"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="url">Destination URL</Label>
+            <Input
+              id="url"
+              type="url"
+              placeholder="https://example.com/article"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              required
+              className="h-12 border-slate-300"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              placeholder="Optional: Add notes about this resource..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="resize-none"
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category">Collection / Category</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger id="category" className="h-12 border-slate-300">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {error && (
+            <div className="text-sm text-red-500 bg-red-50 p-3 rounded">
+              {error}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
+              Cancel
+            </Button>
+            <Button type="submit" className="bg-[#156fe6] hover:bg-[#0f64d8]" disabled={isLoading}>
+              {isLoading ? 'Saving...' : 'Save Link'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
