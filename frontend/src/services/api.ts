@@ -38,6 +38,9 @@ export const urlsAPI = {
   
   getUrls: (params?: { category?: string; search?: string; isFavorite?: boolean }) =>
     api.get('/urls', { params }),
+
+  getCategories: () => api.get('/urls/categories'),
+  createCategory: (name: string) => api.post('/urls/categories', { name }),
   
   getUrl: (id: string) => api.get(`/urls/${id}`),
   

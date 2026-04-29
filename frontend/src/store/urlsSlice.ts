@@ -8,6 +8,7 @@ export interface URL {
   category: string;
   tags?: string[];
   isFavorite: boolean;
+  thumbnail?: string;
   domain: string;
   createdAt: string;
 }

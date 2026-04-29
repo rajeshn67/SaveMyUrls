@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { urlsAPI } from '../services/api';
-import { URL } from '../store/urlsSlice';
+import type { URL } from '../store/urlsSlice';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -20,6 +20,18 @@ interface LinkCardProps {
 export default function LinkCard({ url, onRefresh }: LinkCardProps) {
   const [isFavorite, setIsFavorite] = useState(url.isFavorite);
   const [isLoading, setIsLoading] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  
+  const normalizedUrl = /^https?:\/\//i.test(url.url) ? url.url : `https://${url.url}`;
+  
+  let siteDomain = '';
+  try {
+    siteDomain = new globalThis.URL(normalizedUrl).hostname.replace(/^www\./, '');
+  } catch {
+    siteDomain = (url.domain || '').replace(/^www\./, '');
+  }
+
+  const faviconUrl = `https://www.google.com/s2/favicons?sz=128&domain=${encodeURIComponent(siteDomain || url.url)}`;
 
   const toggleFavorite = async () => {
     setIsLoading(true);
@@ -59,48 +71,68 @@ export default function LinkCard({ url, onRefresh }: LinkCardProps) {
   };
 
   return (
-    <Card className="overflow-hidden rounded-3xl border-slate-200 bg-white shadow-none transition hover:shadow-md">
-      <div className="relative h-52 bg-gradient-to-br from-slate-200 to-slate-300">
+    <Card className="h-[164px] w-[156px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
+      <div className="relative h-[72px] overflow-hidden bg-gradient-to-br from-[#eef6ff] via-[#f5f0ff] to-[#f0faff]">
         <button
           onClick={toggleFavorite}
           disabled={isLoading}
-          className="absolute right-4 top-4 rounded-full bg-white/90 p-2 text-[#f3bf42] shadow"
+          className="absolute right-2.5 top-2.5 rounded-full bg-white/90 p-1.5 text-[#f3bf42] shadow hover:bg-white"
         >
-          <Star className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
+          <Star className={`h-3 w-3 ${isFavorite ? 'fill-current' : ''}`} />
         </button>
+        
+        <div className="absolute inset-0 flex items-center justify-center">
+          <img
+            src={faviconUrl}
+            alt={`${siteDomain || 'site'} favicon`}
+            className="h-14 w-14 rounded object-contain"
+            onLoad={() => setImageLoaded(true)}
+            onError={() => setImageLoaded(false)}
+          />
+        </div>
       </div>
 
-      <CardContent className="space-y-3 pt-4">
-        <p className="text-xs text-slate-500">{url.domain || 'Unknown Domain'}</p>
-        <h3 className="line-clamp-2 text-[30px] font-medium leading-tight text-slate-900">
+      <CardContent className="space-y-1.5 px-2.5 pb-2 pt-2">
+        <div className="flex items-center gap-1.5">
+          <img
+            src={faviconUrl}
+            alt={`${url.domain || 'site'} favicon`}
+            className="h-3 w-3 rounded-full border border-slate-200 bg-white object-cover flex-shrink-0"
+          />
+          <span className="max-w-[94px] truncate text-[9px] uppercase tracking-[0.08em] text-slate-500">
+            {url.domain || 'site'}
+          </span>
+        </div>
+
+        <h3 className="line-clamp-1 text-[11px] font-semibold leading-tight text-slate-900">
           <a href={url.url} target="_blank" rel="noopener noreferrer">
             {url.title}
           </a>
         </h3>
 
         {url.description && (
-          <p className="line-clamp-2 text-sm text-slate-500">
+          <p className="line-clamp-1 text-[10px] text-slate-500">
             {url.description}
           </p>
         )}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary" className="rounded-full bg-[#edf3ff] text-[#156fe6]">
+        <div className="flex flex-wrap items-center gap-1">
+          <Badge variant="secondary" className="rounded-full bg-[#edf3ff] px-1.5 py-0.5 text-[9px] font-medium text-[#156fe6]">
             {url.category}
           </Badge>
-          <span className="text-xs text-slate-500">{getDisplayDate()}</span>
+          <span className="text-[9px] text-slate-500">{getDisplayDate()}</span>
         </div>
 
-        <div className="flex items-center justify-end gap-1 border-t border-slate-100 pt-2">
-          <Button variant="ghost" size="icon">
-            <Pencil className="h-4 w-4 text-slate-400" />
+        <div className="flex items-center justify-end gap-0.5 border-t border-slate-100 pt-1">
+          <Button variant="ghost" size="icon" className="h-5 w-5">
+            <Pencil className="h-3 w-3 text-slate-400" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleDelete}>
-            <Trash2 className="h-4 w-4 text-slate-400" />
+          <Button variant="ghost" size="icon" onClick={handleDelete} className="h-5 w-5">
+            <Trash2 className="h-3 w-3 text-slate-400" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="h-5 w-5 text-xs">
                 ⋯
               </Button>
             </DropdownMenuTrigger>

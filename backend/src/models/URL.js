@@ -40,6 +40,9 @@ const urlSchema = new mongoose.Schema(
 // Extract domain from URL before saving
 urlSchema.pre('save', function (next) {
   try {
+    if (this.url && !/^https?:\/\//i.test(this.url)) {
+      this.url = `https://${this.url}`;
+    }
     const urlObj = new URL(this.url);
     this.domain = urlObj.hostname || 'unknown';
   } catch (error) {

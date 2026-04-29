@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { urlsAPI } from '../services/api';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -19,20 +19,33 @@ interface AddLinkModalProps {
   onSuccess: () => void;
 }
 
-const CATEGORIES = [
-  'uncategorized',
-  'Design',
-  'Development',
-  'Research',
-  'Finance',
-  'Personal',
-];
+const DEFAULT_CATEGORY = 'uncategorized';
 
 export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModalProps) {
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('uncategorized');
+  const [category, setCategory] = useState(DEFAULT_CATEGORY);
+  const [categories, setCategories] = useState<string[]>([DEFAULT_CATEGORY]);
+  useEffect(() => {
+    const fetchCategories = async () => {
+      if (!isOpen) return;
+      try {
+        const response = await urlsAPI.getCategories();
+        const backendCategories = (response.data || []).map((item: { name: string }) => item.name);
+        const merged = Array.from(new Set([DEFAULT_CATEGORY, ...backendCategories]));
+        setCategories(merged);
+        if (!merged.includes(category)) {
+          setCategory(DEFAULT_CATEGORY);
+        }
+      } catch {
+        setCategories([DEFAULT_CATEGORY]);
+      }
+    };
+
+    fetchCategories();
+  }, [isOpen]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -62,7 +75,7 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
     setTitle('');
     setUrl('');
     setDescription('');
-    setCategory('uncategorized');
+    setCategory(DEFAULT_CATEGORY);
   };
 
   const handleClose = () => {
@@ -126,7 +139,7 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORIES.map((cat) => (
+                {categories.map((cat) => (
                   <SelectItem key={cat} value={cat}>
                     {cat.charAt(0).toUpperCase() + cat.slice(1)}
                   </SelectItem>
