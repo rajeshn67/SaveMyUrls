@@ -191,6 +191,47 @@ router.post('/categories', authenticate, async (req, res) => {
   }
 });
 
+// Rename category
+router.patch('/categories/:name', authenticate, async (req, res) => {
+  try {
+    const currentName = normalizeCategoryName(req.params.name);
+    const nextName = normalizeCategoryName(req.body?.name);
+
+    if (currentName === DEFAULT_CATEGORY) {
+      return res.status(400).json({ error: 'Default category cannot be renamed' });
+    }
+
+    if (nextName === DEFAULT_CATEGORY) {
+      return res.status(400).json({ error: 'Cannot rename a category to uncategorized' });
+    }
+
+    if (currentName === nextName) {
+      return res.json({ name: currentName });
+    }
+
+    const existingTarget = await Category.findOne({ userId: req.userId, name: nextName });
+    if (existingTarget) {
+      return res.status(400).json({ error: 'Category with this name already exists' });
+    }
+
+    const category = await Category.findOneAndUpdate(
+      { userId: req.userId, name: currentName },
+      { name: nextName },
+      { new: true }
+    );
+
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    await URL.updateMany({ userId: req.userId, category: currentName }, { category: nextName });
+
+    res.json({ name: category.name });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get single URL
 router.get('/:id', authenticate, async (req, res) => {
   try {

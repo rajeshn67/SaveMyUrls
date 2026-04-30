@@ -27,6 +27,9 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
   const [categories, setCategories] = useState<string[]>([DEFAULT_CATEGORY]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [categoryError, setCategoryError] = useState('');
   useEffect(() => {
     const fetchCategories = async () => {
       if (!isOpen) return;
@@ -76,12 +79,35 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
     setUrl('');
     setDescription('');
     setCategory(DEFAULT_CATEGORY);
+    setNewCategoryName('');
+    setCategoryError('');
   };
 
   const handleClose = () => {
     resetForm();
     setError('');
     onClose();
+  };
+
+  const handleCreateCategory = async () => {
+    const trimmedName = newCategoryName.trim().toLowerCase();
+    if (!trimmedName) return;
+
+    setCategoryError('');
+    setIsCreatingCategory(true);
+    try {
+      await urlsAPI.createCategory(trimmedName);
+      const response = await urlsAPI.getCategories();
+      const backendCategories = (response.data || []).map((item: { name: string }) => item.name);
+      const merged = Array.from(new Set([DEFAULT_CATEGORY, ...backendCategories]));
+      setCategories(merged);
+      setCategory(trimmedName);
+      setNewCategoryName('');
+    } catch (error: any) {
+      setCategoryError(error.response?.data?.error || 'Failed to create category');
+    } finally {
+      setIsCreatingCategory(false);
+    }
   };
 
   return (
@@ -138,7 +164,7 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
               <SelectTrigger id="category" className="h-12 border-slate-300">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-52">
                 {categories.map((cat) => (
                   <SelectItem key={cat} value={cat}>
                     {cat.charAt(0).toUpperCase() + cat.slice(1)}
@@ -146,6 +172,32 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-slate-900">Add a new category</p>
+              <span className="text-xs text-slate-500">Optional</span>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="New category"
+                className="h-11 border-slate-300"
+              />
+              <Button
+                type="button"
+                className="h-11 bg-[#156fe6] hover:bg-[#0f64d8]"
+                onClick={handleCreateCategory}
+                disabled={isCreatingCategory || !newCategoryName.trim()}
+              >
+                {isCreatingCategory ? 'Adding...' : 'Add'}
+              </Button>
+            </div>
+            {categoryError ? (
+              <p className="mt-2 text-sm text-red-500">{categoryError}</p>
+            ) : null}
           </div>
 
           {error && (

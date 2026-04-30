@@ -48,6 +48,8 @@ export const urlsAPI = {
 
   getCategories: () => api.get('/urls/categories'),
   createCategory: (name: string) => api.post('/urls/categories', { name }),
+  renameCategory: (currentName: string, name: string) =>
+    api.patch(`/urls/categories/${encodeURIComponent(currentName)}`, { name }),
   
   getUrl: (id: string) => api.get(`/urls/${id}`),
   

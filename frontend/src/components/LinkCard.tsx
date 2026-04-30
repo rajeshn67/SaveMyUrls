@@ -15,9 +15,10 @@ import {
 interface LinkCardProps {
   url: URL;
   onRefresh: () => void;
+  onEdit?: (url: URL) => void;
 }
 
-export default function LinkCard({ url, onRefresh }: LinkCardProps) {
+export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
   const [isFavorite, setIsFavorite] = useState(url.isFavorite);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -72,7 +73,7 @@ export default function LinkCard({ url, onRefresh }: LinkCardProps) {
 
   return (
     <Card className="group w-[190px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-      <div className="relative h-28 overflow-hidden bg-slate-100">
+      <div className="relative h-22 overflow-hidden bg-slate-100">
         <img
           src={previewSrc}
           alt={`${siteDomain || 'site'} preview`}
@@ -89,58 +90,63 @@ export default function LinkCard({ url, onRefresh }: LinkCardProps) {
         <button
           onClick={toggleFavorite}
           disabled={isLoading}
-          className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[#f3bf42] shadow-sm transition hover:bg-white"
+          className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[#f3bf42] shadow-sm transition hover:bg-white"
         >
-          <Star className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
+          <Star className={`h-3.5 w-3.5 ${isFavorite ? 'fill-current' : ''}`} />
         </button>
 
-        <div className="absolute left-3 bottom-3 flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 shadow-sm">
+        <div className="absolute left-2.5 bottom-2.5 flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 shadow-sm">
           <img
             src={faviconUrl}
             alt={`${url.domain || 'site'} favicon`}
-            className="h-7 w-7 rounded-full border border-slate-200 bg-white object-cover"
+            className="h-6 w-6 rounded-full border border-slate-200 bg-white object-cover"
           />
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700">
             {siteDomain || url.domain || 'site'}
           </span>
         </div>
       </div>
 
-      <CardContent className="space-y-2 px-3 pb-3 pt-3">
-        <div className="space-y-1">
-          <h3 className="line-clamp-2 text-xs font-semibold leading-tight text-slate-900">
+      <CardContent className="space-y-1.5 px-3 pb-2.5 pt-2.5">
+        <div className="space-y-0.5">
+          <h3 className="line-clamp-1 text-xs font-semibold leading-tight text-slate-900">
             <a href={url.url} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600">
               {url.title}
             </a>
           </h3>
           {url.description ? (
-            <p className="line-clamp-2 text-[11px] leading-5 text-slate-500">
+            <p className="line-clamp-1 text-[10px] leading-4 text-slate-500">
               {url.description}
             </p>
           ) : (
-            <p className="text-[11px] leading-5 text-slate-400">No description available</p>
+            <p className="text-[10px] leading-4 text-slate-400">No description available</p>
           )}
         </div>
 
         <div className="flex flex-wrap items-center gap-1">
-          <Badge variant="secondary" className="rounded-full bg-[#edf3ff] px-2 py-0.5 text-[10px] font-semibold text-[#156fe6]">
+          <Badge variant="secondary" className="rounded-full bg-[#edf3ff] px-1.5 py-0.5 text-[9px] font-semibold text-[#156fe6]">
             {url.category || 'Uncategorized'}
           </Badge>
-          <span className="text-[10px] text-slate-500">{getDisplayDate()}</span>
+          <span className="text-[9px] text-slate-500">{getDisplayDate()}</span>
         </div>
 
-        <div className="flex items-center justify-between gap-1 border-t border-slate-100 pt-2">
-          <div className="text-[10px] text-slate-500">{url.tags?.length ? `${url.tags.length} tags` : 'No tags'}</div>
+        <div className="flex items-center justify-between gap-1 border-t border-slate-100 pt-1.5">
+          <div className="text-[9px] text-slate-500">{url.tags?.length ? `${url.tags.length} tags` : 'No tags'}</div>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-xl text-slate-500 hover:bg-slate-100">
-              <Pencil className="h-3.5 w-3.5" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded-xl text-slate-500 hover:bg-slate-100"
+              onClick={() => onEdit?.(url)}
+            >
+              <Pencil className="h-3 w-3" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleDelete} className="h-7 w-7 rounded-xl text-slate-500 hover:bg-slate-100">
-              <Trash2 className="h-3.5 w-3.5" />
+            <Button variant="ghost" size="icon" onClick={handleDelete} className="h-6 w-6 rounded-xl text-slate-500 hover:bg-slate-100">
+              <Trash2 className="h-3 w-3" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-xl text-slate-500 hover:bg-slate-100">
+                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-xl text-slate-500 hover:bg-slate-100">
                   ⋯
                 </Button>
               </DropdownMenuTrigger>

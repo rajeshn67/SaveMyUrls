@@ -6,11 +6,15 @@ import { urlsAPI } from '../services/api';
 import AppShell from '../components/AppShell';
 import AddLinkModal from '../components/AddLinkModal';
 import LinkCard from '../components/LinkCard';
+import EditLinkModal from '../components/EditLinkModal';
+import { URL } from '../store/urlsSlice';
 
 export default function Dashboard() {
   const dispatch = useDispatch() as AppDispatch;
   const { urls, isLoading, error, filter } = useSelector((state: RootState) => state.urls);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingLink, setEditingLink] = useState<URL | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -75,7 +79,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-3">
           <button
             onClick={() => setShowAddModal(true)}
-            className="group flex min-h-[240px] w-full flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-3 text-center transition hover:border-blue-400 hover:bg-slate-50"
+            className="group flex min-h-[170px] w-full flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-3 text-center transition hover:border-blue-400 hover:bg-slate-50"
           >
             <span className="mb-3 inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-sm text-blue-600 transition group-hover:bg-blue-50">
               +
@@ -84,7 +88,15 @@ export default function Dashboard() {
           </button>
 
           {filteredUrls.map((url) => (
-            <LinkCard key={url._id} url={url} onRefresh={fetchUrls} />
+            <LinkCard
+              key={url._id}
+              url={url}
+              onRefresh={fetchUrls}
+              onEdit={(selectedUrl) => {
+                setEditingLink(selectedUrl);
+                setShowEditModal(true);
+              }}
+            />
           ))}
         </div>
       )}
@@ -94,6 +106,19 @@ export default function Dashboard() {
         onClose={() => setShowAddModal(false)}
         onSuccess={() => {
           setShowAddModal(false);
+          fetchUrls();
+        }}
+      />
+      <EditLinkModal
+        isOpen={showEditModal}
+        link={editingLink}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingLink(null);
+        }}
+        onSuccess={() => {
+          setShowEditModal(false);
+          setEditingLink(null);
           fetchUrls();
         }}
       />
