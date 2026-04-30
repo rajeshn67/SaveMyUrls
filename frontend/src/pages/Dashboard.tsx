@@ -11,10 +11,13 @@ export default function Dashboard() {
   const dispatch = useDispatch() as AppDispatch;
   const { urls, isLoading, error, filter } = useSelector((state: RootState) => state.urls);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetchUrls();
-  }, []);
+    if (urls.length === 0) {
+      fetchUrls();
+    }
+  }, [urls.length]);
 
   const fetchUrls = async () => {
     dispatch(setLoading(true));
@@ -32,8 +35,14 @@ export default function Dashboard() {
   const filteredUrls = urls.filter((url) => {
     const matchesCategory = filter.category === 'all' || url.category === filter.category;
     const matchesFavorite = !filter.showFavorites || url.isFavorite;
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const matchesSearch =
+      !normalizedSearch ||
+      [url.title, url.description, url.domain, url.url, ...(url.tags || []), url.category]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(normalizedSearch));
 
-    return matchesCategory && matchesFavorite;
+    return matchesCategory && matchesFavorite && matchesSearch;
   });
 
   return (
@@ -41,6 +50,9 @@ export default function Dashboard() {
       title="My Library"
       subtitle={`Organizing ${urls.length} curated resources`}
       onAddLink={() => setShowAddModal(true)}
+      searchValue={searchTerm}
+      onSearchChange={setSearchTerm}
+      searchPlaceholder="Search by title, domain, tag..."
     >
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>

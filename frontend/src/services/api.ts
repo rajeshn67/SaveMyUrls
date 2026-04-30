@@ -24,6 +24,13 @@ export const authAPI = {
   getMe: () => api.get('/auth/me'),
   updateProfile: (fullName: string, location: string) =>
     api.put('/auth/profile', { fullName, location }),
+  uploadAvatar: (file: File) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return api.post('/auth/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 // URLs API

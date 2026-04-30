@@ -5,7 +5,9 @@ interface User {
   fullName: string;
   email: string;
   location?: string;
+  avatar?: string;
   subscription?: string;
+  categories?: Array<{ name: string; description?: string; color?: string }>;
 }
 
 interface AuthState {

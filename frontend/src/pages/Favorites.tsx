@@ -25,8 +25,10 @@ export default function Favorites() {
   };
 
   useEffect(() => {
-    fetchUrls();
-  }, []);
+    if (urls.length === 0) {
+      fetchUrls();
+    }
+  }, [urls.length]);
 
   const favorites = useMemo(() => urls.filter((item) => item.isFavorite), [urls]);
 

@@ -1,9 +1,12 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
 import User from '../models/User.js';
 import { authenticate } from '../middleware/auth.js';
+import cloudinary from '../config/cloudinary.js';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 const generateToken = (userId) => {
   if (!process.env.JWT_SECRET) {
@@ -13,6 +16,16 @@ const generateToken = (userId) => {
     expiresIn: '7d',
   });
 };
+
+const formatUserResponse = (user) => ({
+  id: user._id,
+  fullName: user.fullName,
+  email: user.email,
+  location: user.location,
+  avatar: user.avatar,
+  subscription: user.subscription,
+  categories: user.categories,
+});
 
 // Register
 router.post('/register', async (req, res) => {
@@ -37,11 +50,7 @@ router.post('/register', async (req, res) => {
     const token = generateToken(user._id);
     res.status(201).json({
       token,
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-      },
+      user: formatUserResponse(user),
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -66,13 +75,7 @@ router.post('/login', async (req, res) => {
     const token = generateToken(user._id);
     res.json({
       token,
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        location: user.location,
-        subscription: user.subscription,
-      },
+      user: formatUserResponse(user),
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -83,14 +86,7 @@ router.post('/login', async (req, res) => {
 router.get('/me', authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
-    res.json({
-      id: user._id,
-      fullName: user.fullName,
-      email: user.email,
-      location: user.location,
-      subscription: user.subscription,
-      categories: user.categories,
-    });
+    res.json(formatUserResponse(user));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -105,12 +101,46 @@ router.put('/profile', authenticate, async (req, res) => {
       { fullName, location },
       { new: true }
     );
-    res.json({
-      id: user._id,
-      fullName: user.fullName,
-      email: user.email,
-      location: user.location,
+    res.json(formatUserResponse(user));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Upload avatar
+router.post('/avatar', authenticate, upload.single('avatar'), async (req, res) => {
+  try {
+    if (
+      !process.env.CLOUDINARY_CLOUD_NAME ||
+      !process.env.CLOUDINARY_API_KEY ||
+      !process.env.CLOUDINARY_API_SECRET
+    ) {
+      return res.status(500).json({ error: 'Cloudinary is not configured on server' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file uploaded' });
+    }
+
+    const uploadResult = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'savemyurls/avatars', resource_type: 'image' },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        }
+      );
+
+      stream.end(req.file.buffer);
     });
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { avatar: uploadResult.secure_url },
+      { new: true }
+    );
+
+    res.json(formatUserResponse(user));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
