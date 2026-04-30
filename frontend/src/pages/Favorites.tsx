@@ -39,7 +39,7 @@ export default function Favorites() {
       {isLoading ? (
         <p className="text-slate-500">Loading...</p>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(156px,156px))] gap-3">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-3">
           {favorites.map((url) => (
             <LinkCard key={url._id} url={url} onRefresh={fetchUrls} />
           ))}

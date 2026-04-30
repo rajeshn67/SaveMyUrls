@@ -60,10 +60,10 @@ export default function Dashboard() {
       {isLoading ? (
         <p className="text-slate-500">Loading your links...</p>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(156px,156px))] gap-3">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-3">
           <button
             onClick={() => setShowAddModal(true)}
-            className="group flex h-[164px] w-[156px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white p-3 text-center transition hover:border-blue-400 hover:bg-slate-50"
+            className="group flex min-h-[240px] w-full flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-3 text-center transition hover:border-blue-400 hover:bg-slate-50"
           >
             <span className="mb-3 inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-sm text-blue-600 transition group-hover:bg-blue-50">
               +
