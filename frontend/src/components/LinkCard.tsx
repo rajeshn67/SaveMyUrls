@@ -7,7 +7,7 @@ import type { URL } from '../store/urlsSlice';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Pencil, Trash2, Star, Link, Pin, Copy, ExternalLink } from 'lucide-react';
+import { Pencil, Trash2, Star, Link, Pin, Copy, ExternalLink, Lock, MoreHorizontal } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,6 +57,22 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
       dispatch(updateUrl({ ...url, isPinned: !url.isPinned, pinnedAt: !url.isPinned ? new Date().toISOString() : undefined }));
     } catch (error) {
       console.error('Failed to toggle pin:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const moveToVault = async () => {
+    const password = window.prompt('Enter Vault Password');
+    if (!password) return;
+
+    setIsLoading(true);
+    try {
+      await urlsAPI.toggleSecret(url._id, password);
+      dispatch(deleteUrl(url._id));
+      onRefresh?.();
+    } catch (error: any) {
+      window.alert(error.response?.data?.error || 'Failed to move link to vault');
     } finally {
       setIsLoading(false);
     }
@@ -174,7 +190,7 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button type="button" variant="ghost" size="icon" className="h-6 w-6 rounded-xl text-slate-500 hover:bg-slate-100">
-                  ⋯
+                  <MoreHorizontal className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -189,6 +205,10 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
                 <DropdownMenuItem onClick={togglePin}>
                   <Pin className="mr-2 h-4 w-4" />
                   {url.isPinned ? 'Unpin from Top' : 'Pin to Top'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={moveToVault}>
+                  <Lock className="mr-2 h-4 w-4" />
+                  Move to Vault
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={toggleFavorite} className="text-red-600">
                   <Star className="mr-2 h-4 w-4" />

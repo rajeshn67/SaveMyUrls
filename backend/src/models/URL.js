@@ -31,6 +31,14 @@ const urlSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isSecret: {
+      type: Boolean,
+      default: false,
+    },
+    secretPassword: {
+      type: String,
+      select: false,
+    },
     pinnedAt: {
       type: Date,
     },

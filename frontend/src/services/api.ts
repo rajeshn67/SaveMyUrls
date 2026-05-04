@@ -67,6 +67,19 @@ export const urlsAPI = {
 
   togglePin: (id: string) =>
     api.patch(`/urls/${id}/pin`),
+
+  createSecretUrl: (data: {
+    title: string;
+    url: string;
+    category?: string;
+    password: string;
+  }) => api.post('/urls/secret', data),
+
+  unlockSecretUrls: (password: string) =>
+    api.post('/urls/secret/unlock', { password }),
+
+  toggleSecret: (id: string, password: string) =>
+    api.put(`/urls/${id}/toggle-secret`, { password }),
 };
 
 export default api;

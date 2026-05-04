@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Bookmark, Camera, CirclePlus, FolderOpen, Sparkles, Lock } from 'lucide-react';
 import { RootState } from '../store/store';
 import { setUser, logout } from '../store/authSlice';
+import { resetUrls } from '../store/urlsSlice';
+import { lockVault } from '../store/vaultSlice';
 import { authAPI } from '../services/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -57,6 +59,8 @@ export default function Profile() {
 
   const handleLogout = () => {
     dispatch(logout());
+    dispatch(resetUrls());
+    dispatch(lockVault());
     navigate('/');
   };
 

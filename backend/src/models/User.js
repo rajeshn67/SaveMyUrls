@@ -30,6 +30,10 @@ const userSchema = new mongoose.Schema(
       enum: ['free', 'premium'],
       default: 'free',
     },
+    vaultPassword: {
+      type: String,
+      select: false,
+    },
     categories: [
       {
         name: String,

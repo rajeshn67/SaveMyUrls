@@ -3,6 +3,8 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from './store/store';
 import { setUser, setToken, setError } from './store/authSlice';
+import { resetUrls } from './store/urlsSlice';
+import { lockVault } from './store/vaultSlice';
 import { authAPI } from './services/api';
 
 import Landing from './pages/Landing';
@@ -10,6 +12,7 @@ import Dashboard from './pages/Dashboard';
 import Favorites from './pages/Favorites';
 import Profile from './pages/Profile';
 import Categories from './pages/Categories';
+import PrivateVault from './pages/PrivateVault';
 
 function App() {
   const dispatch = useDispatch();
@@ -23,6 +26,8 @@ function App() {
           dispatch(setUser(response.data));
         } catch (error) {
           dispatch(setToken(''));
+          dispatch(resetUrls());
+          dispatch(lockVault());
           dispatch(setError('Session expired'));
         }
       }
@@ -36,6 +41,7 @@ function App() {
       <Routes>
         <Route path="/" element={token ? <Navigate to="/dashboard" /> : <Landing />} />
         <Route path="/dashboard" element={token ? <Dashboard /> : <Navigate to="/" />} />
+        <Route path="/vault" element={token ? <PrivateVault /> : <Navigate to="/" />} />
         <Route path="/favorites" element={token ? <Favorites /> : <Navigate to="/" />} />
         <Route path="/profile" element={token ? <Profile /> : <Navigate to="/" />} />
         <Route path="/categories" element={token ? <Categories /> : <Navigate to="/" />} />

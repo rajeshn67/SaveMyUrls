@@ -19,6 +19,7 @@ connectDB();
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/urls', urlRoutes);
+app.use('/api/links', urlRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

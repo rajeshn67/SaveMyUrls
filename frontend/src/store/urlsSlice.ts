@@ -9,6 +9,7 @@ export interface URL {
   tags?: string[];
   isFavorite: boolean;
   isPinned: boolean;
+  isSecret?: boolean;
   pinnedAt?: string;
   thumbnail?: string;
   domain: string;
@@ -78,9 +79,10 @@ const urlsSlice = createSlice({
     setFilter: (state, action: PayloadAction<Partial<URLsState['filter']>>) => {
       state.filter = { ...state.filter, ...action.payload };
     },
+    resetUrls: () => initialState,
   },
 });
 
-export const { setUrls, addUrl, updateUrl, deleteUrl, setLoading, setError, setFilter } =
+export const { setUrls, addUrl, updateUrl, deleteUrl, setLoading, setError, setFilter, resetUrls } =
   urlsSlice.actions;
 export default urlsSlice.reducer;

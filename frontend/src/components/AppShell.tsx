@@ -1,9 +1,11 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Grid3X3, Star, Folder, UserRound, Settings, LogOut, Bell, Search, Bookmark, Link2 } from 'lucide-react';
+import { Grid3X3, Star, Folder, UserRound, Settings, LogOut, Bell, Search, Bookmark, Link2, Lock } from 'lucide-react';
 import { RootState } from '../store/store';
 import { logout } from '../store/authSlice';
+import { resetUrls } from '../store/urlsSlice';
+import { lockVault } from '../store/vaultSlice';
 import { Button } from './ui/button';
 
 interface AppShellProps {
@@ -21,6 +23,7 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: Grid3X3 },
   { to: '/favorites', label: 'Favorites', icon: Star },
   { to: '/categories', label: 'Categories', icon: Folder },
+  { to: '/vault', label: 'Private Vault', icon: Lock },
   { to: '/profile', label: 'Profile', icon: UserRound },
 ];
 
@@ -87,12 +90,16 @@ export default function AppShell({
           })}
         </nav>
 
-        <Button
-          onClick={onAddLink}
-          className="mt-auto mb-6 h-12 rounded-xl bg-[#156fe6] text-base hover:bg-[#1062cd]"
-        >
-          + Add New Link
-        </Button>
+        {onAddLink ? (
+          <Button
+            onClick={onAddLink}
+            className="mt-auto mb-6 h-12 rounded-xl bg-[#156fe6] text-base hover:bg-[#1062cd]"
+          >
+            + Add New Link
+          </Button>
+        ) : (
+          <div className="mt-auto mb-6" />
+        )}
 
         <div className="space-y-1 text-sm">
           <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-slate-600 hover:bg-white">
@@ -102,6 +109,8 @@ export default function AppShell({
           <button
             onClick={() => {
               dispatch(logout());
+              dispatch(resetUrls());
+              dispatch(lockVault());
               navigate('/');
             }}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-slate-600 hover:bg-white"

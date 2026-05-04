@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setToken, setUser, setError } from '../store/authSlice';
+import { resetUrls } from '../store/urlsSlice';
+import { lockVault } from '../store/vaultSlice';
 import { authAPI } from '../services/api';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -69,6 +71,8 @@ export default function AuthModal({ open, initialMode, onOpenChange }: AuthModal
           ? await authAPI.login(email, password)
           : await authAPI.register(fullName, email, password);
 
+      dispatch(resetUrls());
+      dispatch(lockVault());
       dispatch(setToken(response.data.token));
       dispatch(setUser(response.data.user));
       onOpenChange(false);

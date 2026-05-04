@@ -2,6 +2,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { RootState } from '../store/store';
 import { logout } from '../store/authSlice';
+import { resetUrls } from '../store/urlsSlice';
+import { lockVault } from '../store/vaultSlice';
 import { Button } from './ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 
@@ -15,6 +17,8 @@ export default function Navigation() {
 
   const handleLogout = () => {
     dispatch(logout());
+    dispatch(resetUrls());
+    dispatch(lockVault());
     navigate('/');
   };
 

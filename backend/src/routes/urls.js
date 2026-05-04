@@ -1,7 +1,9 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 import URL from '../models/URL.js';
 import Category from '../models/Category.js';
+import User from '../models/User.js';
 import { authenticate } from '../middleware/auth.js';
 import { getLinkPreview } from '../utils/linkPreview.js';
 
@@ -11,6 +13,38 @@ const DEFAULT_CATEGORY = 'uncategorized';
 const normalizeCategoryName = (value) => {
   const normalized = (value || '').trim();
   return normalized || DEFAULT_CATEGORY;
+};
+
+const sanitizeUrl = (url) => {
+  const sanitized = url.toObject ? url.toObject() : { ...url };
+  delete sanitized.secretPassword;
+  return sanitized;
+};
+
+const createCategoryIfNeeded = async (userId, category) => {
+  if (category === DEFAULT_CATEGORY) return;
+
+  await Category.findOneAndUpdate(
+    { userId, name: category },
+    { $setOnInsert: { userId, name: category } },
+    { upsert: true, new: true }
+  );
+};
+
+const ensureVaultAccess = async (userId, password) => {
+  const user = await User.findById(userId).select('+vaultPassword');
+
+  if (!user) {
+    return false;
+  }
+
+  if (!user.vaultPassword) {
+    user.vaultPassword = await bcrypt.hash(password, 12);
+    await user.save();
+    return true;
+  }
+
+  return bcrypt.compare(password, user.vaultPassword);
 };
 
 // Create URL
@@ -32,14 +66,71 @@ router.post('/', authenticate, async (req, res) => {
     });
 
     await newUrl.save();
-    if (normalizedCategory !== DEFAULT_CATEGORY) {
-      await Category.findOneAndUpdate(
-        { userId: req.userId, name: normalizedCategory },
-        { $setOnInsert: { userId: req.userId, name: normalizedCategory } },
-        { upsert: true, new: true }
-      );
-    }
+    await createCategoryIfNeeded(req.userId, normalizedCategory);
     res.status(201).json(newUrl);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create secret URL
+router.post('/secret', authenticate, async (req, res) => {
+  try {
+    const { title, url, category, password } = req.body;
+    const trimmedPassword = (password || '').trim();
+
+    if (!trimmedPassword) {
+      return res.status(400).json({ error: 'Vault password is required' });
+    }
+
+    const preview = await getLinkPreview(url);
+    const normalizedCategory = normalizeCategoryName(category);
+    const hasVaultAccess = await ensureVaultAccess(req.userId, trimmedPassword);
+
+    if (!hasVaultAccess) {
+      return res.status(401).json({ error: 'Incorrect password' });
+    }
+
+    const secretPassword = await bcrypt.hash(trimmedPassword, 12);
+
+    const secretUrl = new URL({
+      userId: req.userId,
+      title,
+      url: preview.normalizedUrl || url,
+      category: normalizedCategory,
+      isSecret: true,
+      secretPassword,
+      thumbnail: preview.thumbnail || undefined,
+      domain: preview.domain,
+    });
+
+    await secretUrl.save();
+
+    res.status(201).json(sanitizeUrl(secretUrl));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Unlock secret URLs for user
+router.post('/secret/unlock', authenticate, async (req, res) => {
+  try {
+    const { password } = req.body;
+    const trimmedPassword = (password || '').trim();
+
+    if (!trimmedPassword) {
+      return res.status(400).json({ error: 'Vault password is required' });
+    }
+
+    const isPasswordValid = await ensureVaultAccess(req.userId, trimmedPassword);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Incorrect password' });
+    }
+
+    const secretUrls = await URL.find({ userId: req.userId, isSecret: true }).sort({ createdAt: -1 });
+
+    res.json(secretUrls.map(sanitizeUrl));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -49,7 +140,7 @@ router.post('/', authenticate, async (req, res) => {
 router.get('/', authenticate, async (req, res) => {
   try {
     const { category, search, isFavorite } = req.query;
-    let query = { userId: req.userId };
+    let query = { userId: req.userId, isSecret: { $ne: true } };
 
     if (category && category !== 'all') {
       query.category = category;
@@ -103,6 +194,7 @@ router.get('/categories', authenticate, async (req, res) => {
       {
         $match: {
           userId: userObjectId,
+          isSecret: { $ne: true },
         },
       },
       {
@@ -179,11 +271,7 @@ router.post('/categories', authenticate, async (req, res) => {
       return res.status(200).json({ name: DEFAULT_CATEGORY, count: 0 });
     }
 
-    await Category.findOneAndUpdate(
-      { userId: req.userId, name: normalizedName },
-      { $setOnInsert: { userId: req.userId, name: normalizedName } },
-      { upsert: true, new: true }
-    );
+    await createCategoryIfNeeded(req.userId, normalizedName);
 
     res.status(201).json({ name: normalizedName, count: 0 });
   } catch (error) {
@@ -238,6 +326,7 @@ router.get('/:id', authenticate, async (req, res) => {
     const url = await URL.findOne({
       _id: req.params.id,
       userId: req.userId,
+      isSecret: { $ne: true },
     });
 
     if (!url) {
@@ -267,7 +356,7 @@ router.put('/:id', authenticate, async (req, res) => {
     }
 
     const updatedUrl = await URL.findOneAndUpdate(
-      { _id: req.params.id, userId: req.userId },
+      { _id: req.params.id, userId: req.userId, isSecret: { $ne: true } },
       { title, description, category: normalizedCategory, tags, isFavorite, ...previewUpdate },
       { new: true }
     );
@@ -276,13 +365,7 @@ router.put('/:id', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'URL not found' });
     }
 
-    if (normalizedCategory !== DEFAULT_CATEGORY) {
-      await Category.findOneAndUpdate(
-        { userId: req.userId, name: normalizedCategory },
-        { $setOnInsert: { userId: req.userId, name: normalizedCategory } },
-        { upsert: true, new: true }
-      );
-    }
+    await createCategoryIfNeeded(req.userId, normalizedCategory);
 
     res.json(updatedUrl);
   } catch (error) {
@@ -308,12 +391,64 @@ router.delete('/:id', authenticate, async (req, res) => {
   }
 });
 
+// Toggle secret mode
+router.put('/:id/toggle-secret', authenticate, async (req, res) => {
+  try {
+    const { password } = req.body;
+    const url = await URL.findOne({
+      _id: req.params.id,
+      userId: req.userId,
+    }).select('+secretPassword');
+
+    if (!url) {
+      return res.status(404).json({ error: 'URL not found' });
+    }
+
+    const trimmedPassword = (password || '').trim();
+
+    if (url.isSecret) {
+      if (url.secretPassword) {
+        const isPasswordValid = trimmedPassword
+          ? await bcrypt.compare(trimmedPassword, url.secretPassword)
+          : false;
+
+        if (!isPasswordValid) {
+          return res.status(401).json({ error: 'Incorrect password' });
+        }
+      }
+
+      url.isSecret = false;
+      url.secretPassword = undefined;
+    } else {
+      if (!trimmedPassword) {
+        return res.status(400).json({ error: 'Vault password is required' });
+      }
+
+      const hasVaultAccess = await ensureVaultAccess(req.userId, trimmedPassword);
+      if (!hasVaultAccess) {
+        return res.status(401).json({ error: 'Incorrect password' });
+      }
+
+      url.isSecret = true;
+      url.secretPassword = await bcrypt.hash(trimmedPassword, 12);
+      url.isPinned = false;
+      url.pinnedAt = null;
+    }
+
+    await url.save();
+    res.json(sanitizeUrl(url));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Toggle favorite
 router.patch('/:id/favorite', authenticate, async (req, res) => {
   try {
     const url = await URL.findOne({
       _id: req.params.id,
       userId: req.userId,
+      isSecret: { $ne: true },
     });
 
     if (!url) {
@@ -335,6 +470,7 @@ router.patch('/:id/pin', authenticate, async (req, res) => {
     const url = await URL.findOne({
       _id: req.params.id,
       userId: req.userId,
+      isSecret: { $ne: true },
     });
 
     if (!url) {
