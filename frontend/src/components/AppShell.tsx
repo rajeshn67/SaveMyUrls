@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Grid3X3, Star, Folder, UserRound, Settings, LogOut, Bell, Search, Bookmark, Link2, Lock } from 'lucide-react';
+import { BarChart3, Grid3X3, Star, Folder, UserRound, Settings, LogOut, Bell, Search, Bookmark, Link2, Lock } from 'lucide-react';
 import { RootState } from '../store/store';
 import { logout } from '../store/authSlice';
 import { resetUrls } from '../store/urlsSlice';
@@ -21,6 +21,7 @@ interface AppShellProps {
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: Grid3X3 },
+  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/favorites', label: 'Favorites', icon: Star },
   { to: '/categories', label: 'Categories', icon: Folder },
   { to: '/vault', label: 'Private Vault', icon: Lock },

@@ -263,6 +263,115 @@ router.get('/categories', authenticate, async (req, res) => {
   }
 });
 
+// Get analytics for user
+router.get('/analytics', authenticate, async (req, res) => {
+  try {
+    const userObjectId = new mongoose.Types.ObjectId(req.userId);
+    const now = new Date();
+    const startDate = new Date(now);
+    startDate.setDate(now.getDate() - 29);
+    startDate.setHours(0, 0, 0, 0);
+
+    const [
+      totalLinks,
+      publicLinks,
+      secretLinks,
+      favoriteLinks,
+      pinnedLinks,
+      categoryBreakdown,
+      domainBreakdown,
+      recentLinks,
+      linksOverTime,
+    ] = await Promise.all([
+      URL.countDocuments({ userId: req.userId }),
+      URL.countDocuments({ userId: req.userId, isSecret: { $ne: true } }),
+      URL.countDocuments({ userId: req.userId, isSecret: true }),
+      URL.countDocuments({ userId: req.userId, isSecret: { $ne: true }, isFavorite: true }),
+      URL.countDocuments({ userId: req.userId, isSecret: { $ne: true }, isPinned: true }),
+      URL.aggregate([
+        { $match: { userId: userObjectId, isSecret: { $ne: true } } },
+        {
+          $group: {
+            _id: { $ifNull: ['$category', DEFAULT_CATEGORY] },
+            count: { $sum: 1 },
+          },
+        },
+        { $project: { _id: 0, name: '$_id', count: 1 } },
+        { $sort: { count: -1, name: 1 } },
+        { $limit: 8 },
+      ]),
+      URL.aggregate([
+        { $match: { userId: userObjectId, isSecret: { $ne: true } } },
+        {
+          $group: {
+            _id: { $ifNull: ['$domain', 'unknown'] },
+            count: { $sum: 1 },
+          },
+        },
+        { $project: { _id: 0, domain: '$_id', count: 1 } },
+        { $sort: { count: -1, domain: 1 } },
+        { $limit: 8 },
+      ]),
+      URL.find({ userId: req.userId, isSecret: { $ne: true } })
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .select('title url category domain createdAt isFavorite isPinned thumbnail'),
+      URL.aggregate([
+        {
+          $match: {
+            userId: userObjectId,
+            isSecret: { $ne: true },
+            createdAt: { $gte: startDate },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: '%Y-%m-%d',
+                date: '$createdAt',
+              },
+            },
+            count: { $sum: 1 },
+          },
+        },
+        { $project: { _id: 0, date: '$_id', count: 1 } },
+        { $sort: { date: 1 } },
+      ]),
+    ]);
+
+    const timeMap = new Map(linksOverTime.map((item) => [item.date, item.count]));
+    const activity = Array.from({ length: 30 }, (_, index) => {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + index);
+      const key = date.toISOString().slice(0, 10);
+      return {
+        date: key,
+        label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        count: timeMap.get(key) || 0,
+      };
+    });
+
+    res.json({
+      totals: {
+        totalLinks,
+        publicLinks,
+        secretLinks,
+        favoriteLinks,
+        pinnedLinks,
+        categoryCount: categoryBreakdown.length,
+        domainCount: domainBreakdown.length,
+      },
+      categoryBreakdown,
+      domainBreakdown,
+      activity,
+      recentLinks,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Create category
 router.post('/categories', authenticate, async (req, res) => {
   try {

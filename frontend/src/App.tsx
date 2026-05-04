@@ -13,6 +13,7 @@ import Favorites from './pages/Favorites';
 import Profile from './pages/Profile';
 import Categories from './pages/Categories';
 import PrivateVault from './pages/PrivateVault';
+import Analytics from './pages/Analytics';
 
 function App() {
   const dispatch = useDispatch();
@@ -41,6 +42,7 @@ function App() {
       <Routes>
         <Route path="/" element={token ? <Navigate to="/dashboard" /> : <Landing />} />
         <Route path="/dashboard" element={token ? <Dashboard /> : <Navigate to="/" />} />
+        <Route path="/analytics" element={token ? <Analytics /> : <Navigate to="/" />} />
         <Route path="/vault" element={token ? <PrivateVault /> : <Navigate to="/" />} />
         <Route path="/favorites" element={token ? <Favorites /> : <Navigate to="/" />} />
         <Route path="/profile" element={token ? <Profile /> : <Navigate to="/" />} />
