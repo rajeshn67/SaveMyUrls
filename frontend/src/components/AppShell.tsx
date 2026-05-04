@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useId, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { BarChart3, Grid3X3, Star, Folder, UserRound, Settings, LogOut, Bell, Search, Bookmark, Link2, Lock } from 'lucide-react';
@@ -45,10 +45,15 @@ export default function AppShell({
   const { isUnlocked } = useSelector((state: RootState) => state.vault);
   const [localSearchValue, setLocalSearchValue] = useState('');
   const [settingsVersion, setSettingsVersion] = useState(0);
+  const searchInputId = useId();
 
   const inputValue = searchValue ?? localSearchValue;
 
   const handleSearchChange = (value: string) => {
+    if (user?.email && value.trim().toLowerCase() === user.email.toLowerCase()) {
+      value = '';
+    }
+
     if (typeof onSearchChange === 'function') {
       onSearchChange(value);
       return;
@@ -94,6 +99,11 @@ export default function AppShell({
     window.addEventListener('savemyurls-settings-changed', handleSettingsChange);
     return () => window.removeEventListener('savemyurls-settings-changed', handleSettingsChange);
   }, []);
+
+  useEffect(() => {
+    if (!user?.email || inputValue.trim().toLowerCase() !== user.email.toLowerCase()) return;
+    handleSearchChange('');
+  }, [inputValue, user?.email]);
 
   return (
     <div className="h-screen overflow-hidden bg-[#f6f7fc] text-slate-900">
@@ -169,26 +179,32 @@ export default function AppShell({
       </aside>
 
       <main className="ml-[220px] h-screen overflow-hidden">
-        <header className="sticky top-0 z-10 flex h-20 items-center justify-between border-b border-slate-200 bg-[#f6f7fc]/95 px-7 backdrop-blur">
-          {showSearch ? (
-            <div className="flex w-full max-w-[460px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-3">
-              <Search className="h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                name="savedLinksSearch"
-                autoComplete="off"
-                aria-label="Search saved links"
-                placeholder={searchPlaceholder}
-                value={inputValue}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="h-10 w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
-              />
-            </div>
-          ) : (
-            <div className="w-full max-w-[460px]" />
-          )}
+        <header className="sticky top-0 z-10 flex h-20 items-center justify-between gap-5 border-b border-slate-200 bg-[#f6f7fc]/95 px-7 backdrop-blur">
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-2xl font-semibold leading-tight tracking-tight text-slate-900">{title}</h1>
+            {subtitle ? <p className="mt-0.5 truncate text-sm text-slate-500">{subtitle}</p> : null}
+          </div>
 
-          <div className="ml-6 flex items-center gap-5">
+          <div className="ml-auto flex min-w-0 items-center gap-5">
+            {showSearch ? (
+              <div className="flex w-[360px] max-w-[34vw] items-center gap-2 rounded-xl border border-slate-200 bg-white px-3">
+                <Search className="h-4 w-4 flex-shrink-0 text-slate-400" />
+                <input
+                  id={searchInputId}
+                  type="search"
+                  name={`library-search-${location.pathname.replace(/\W+/g, '-')}`}
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  aria-label="Search saved links"
+                  placeholder={searchPlaceholder}
+                  value={inputValue}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="app-search-input h-10 min-w-0 w-full bg-transparent text-sm text-slate-900 outline-none"
+                />
+              </div>
+            ) : null}
             <Bell className="h-5 w-5 text-slate-500" />
             <div className="flex items-center gap-2">
               <div className="text-right text-sm">
@@ -209,10 +225,6 @@ export default function AppShell({
         </header>
 
         <div className="no-scrollbar h-[calc(100vh-80px)] overflow-y-auto px-7 py-7">
-          <div className="mb-6">
-            <h1 className="text-5xl font-semibold leading-tight tracking-tight text-slate-900">{title}</h1>
-            {subtitle ? <p className="mt-1 text-lg text-slate-500">{subtitle}</p> : null}
-          </div>
           {children}
         </div>
       </main>

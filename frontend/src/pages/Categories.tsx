@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import AppShell from '../components/AppShell';
 import { urlsAPI } from '../services/api';
-import { Folder, Palette, TerminalSquare, Sparkles, Wallet, Heart, Pencil, Plus, Search } from 'lucide-react';
+import { Folder, Palette, TerminalSquare, Sparkles, Wallet, Heart, Pencil, Plus, Search, Link2, Layers3 } from 'lucide-react';
 import LinkCard from '../components/LinkCard';
 import AddLinkModal from '../components/AddLinkModal';
 import { URL } from '../store/urlsSlice';
@@ -199,6 +199,15 @@ export default function Categories() {
     );
   }, [categoryStats, categorySearchTerm]);
 
+  const totalCategoryLinks = useMemo(
+    () => categoryStats.reduce((total, category) => total + category.count, 0),
+    [categoryStats]
+  );
+  const topCategory = useMemo(
+    () => [...categoryStats].sort((a, b) => b.count - a.count)[0] || null,
+    [categoryStats]
+  );
+
   return (
     <AppShell
       title="Categories"
@@ -220,44 +229,57 @@ export default function Categories() {
         </div>
       ) : (
       <>
-      <div className="flex max-w-full flex-col gap-6 overflow-hidden xl:h-[calc(100vh-230px)] xl:flex-row">
-        <div className="w-full rounded-3xl border border-slate-200 bg-white p-4 xl:h-[calc(100vh-220px)] xl:w-[340px] xl:flex-shrink-0 xl:overflow-hidden">
-          <div className="mb-4 flex items-center gap-2">
-            <div className="relative flex-1">
+      <div className="grid max-w-full grid-cols-1 gap-6 overflow-hidden xl:grid-cols-[320px_minmax(0,1fr)]">
+        <aside className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-100 bg-slate-50/70 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#156fe6] shadow-sm">
+                  <Layers3 className="h-5 w-5" />
+                </div>
+                <h2 className="text-xl font-semibold tracking-tight text-slate-950">Collections</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {categoryStats.length} folders, {totalCategoryLinks} saved links
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddCategoryModal(true)}
+                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#156fe6] text-white shadow-sm transition hover:bg-[#0f64d8]"
+                aria-label="Add new category"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="relative mt-4">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 value={categorySearchTerm}
                 onChange={(e) => setCategorySearchTerm(e.target.value)}
                 placeholder="Search categories..."
-                className="h-10 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-3 text-sm outline-none focus:border-[#156fe6]"
+                className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none transition focus:border-[#156fe6] focus:ring-4 focus:ring-blue-100"
               />
             </div>
-            <button
-              type="button"
-              onClick={() => setShowAddCategoryModal(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#156fe6] text-white transition hover:bg-[#0f64d8]"
-              aria-label="Add new category"
-            >
-              <Plus className="h-5 w-5" />
-            </button>
           </div>
 
-          <div className="space-y-2 xl:max-h-[calc(100vh-340px)] xl:overflow-y-auto xl:pr-1">
+          <div className={`space-y-2 overflow-y-auto p-3 ${visibleCategoryLinks.length > 0 ? 'xl:max-h-[820px]' : 'xl:max-h-[520px]'}`}>
             {filteredCategoryStats.length === 0 ? (
-              <div className="rounded-xl border border-slate-200 bg-white p-4 text-center text-sm text-slate-500">
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center text-sm text-slate-500">
                 {categorySearchTerm ? 'No categories found' : 'No categories yet'}
               </div>
             ) : (
               filteredCategoryStats.map((category) => {
                 const Icon = getCategoryIcon(category.name);
                 const isActive = selectedCategory === category.name;
+                const percent = totalCategoryLinks ? Math.max(6, Math.round((category.count / totalCategoryLinks) * 100)) : 0;
                 return (
                   <div
                     key={category.name}
                     role="button"
                     tabIndex={0}
-                    className={`w-full rounded-xl border p-3 text-left hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#156fe6] ${
-                      isActive ? 'border-[#156fe6] bg-[#f3f8ff]' : 'border-slate-200 bg-white'
+                    className={`relative w-full overflow-hidden rounded-xl border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-[#156fe6] ${
+                      isActive ? 'border-[#156fe6] bg-[#f4f8ff] shadow-sm' : 'border-transparent bg-white hover:border-slate-200 hover:bg-slate-50'
                     }`}
                     onClick={() => setSelectedCategory(category.name)}
                     onKeyDown={(e) => {
@@ -267,98 +289,161 @@ export default function Categories() {
                       }
                     }}
                   >
-                    <div className="mb-2 flex items-center justify-between">
-                      <div className="rounded-lg bg-[#eef4ff] p-1.5 text-[#156fe6]">
-                        <Icon className="h-3.5 w-3.5" />
+                    {isActive ? <div className="absolute inset-y-3 left-0 w-1 rounded-r-full bg-[#156fe6]" /> : null}
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#eef4ff] text-[#156fe6]">
+                          <Icon className="h-4 w-4" />
                       </div>
-                      <span className="text-[10px] font-semibold text-slate-500">
-                        {category.count} Links
-                      </span>
-                    </div>
-                    <div className="mb-1 flex items-center justify-between gap-2">
-                      {editingCategory === category.name ? (
-                        <div className="flex w-full items-center gap-2">
-                          <input
-                            value={editedCategoryName}
-                            onChange={(e) => setEditedCategoryName(e.target.value)}
-                            className="w-full rounded-lg border border-slate-300 bg-slate-50 px-2 py-1 text-sm outline-none"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleRenameCategory(category.name, editedCategoryName);
-                              }
-                              if (e.key === 'Escape') {
-                                setEditingCategory(null);
-                                setEditedCategoryName('');
-                              }
-                            }}
-                          />
-                          <button
-                            type="button"
-                            className="rounded-lg bg-[#156fe6] px-2 py-1 text-[10px] font-semibold text-white hover:bg-[#0f64d8] disabled:cursor-not-allowed disabled:opacity-70"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRenameCategory(category.name, editedCategoryName);
-                            }}
-                            disabled={isRenamingCategory}
-                          >
-                            {isRenamingCategory ? 'Saving...' : 'Save'}
-                          </button>
-                          <button
-                            type="button"
-                            className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingCategory(null);
-                              setEditedCategoryName('');
-                            }}
-                          >
-                            Cancel
-                          </button>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 items-center gap-2">
+                          {editingCategory === category.name ? (
+                            <div className="flex w-full items-center gap-2">
+                              <input
+                                value={editedCategoryName}
+                                onChange={(e) => setEditedCategoryName(e.target.value)}
+                                className="h-8 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm outline-none focus:border-[#156fe6]"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleRenameCategory(category.name, editedCategoryName);
+                                  }
+                                  if (e.key === 'Escape') {
+                                    setEditingCategory(null);
+                                    setEditedCategoryName('');
+                                  }
+                                }}
+                              />
+                              <button
+                                type="button"
+                                className="h-8 rounded-lg bg-[#156fe6] px-2 text-[10px] font-semibold text-white hover:bg-[#0f64d8] disabled:cursor-not-allowed disabled:opacity-70"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRenameCategory(category.name, editedCategoryName);
+                                }}
+                                disabled={isRenamingCategory}
+                              >
+                                {isRenamingCategory ? 'Saving' : 'Save'}
+                              </button>
+                            </div>
+                          ) : (
+                            <h3 className="line-clamp-1 text-sm font-semibold text-slate-950">{category.name}</h3>
+                          )}
                         </div>
-                      ) : (
-                        <>
-                          <h3 className="line-clamp-1 text-sm font-semibold text-slate-900">{category.name}</h3>
-                          {category.name !== 'uncategorized' ? (
-                            <button
-                              type="button"
-                              className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                startRenameCategory(category.name);
-                              }}
-                              aria-label={`Edit ${category.name} category`}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </button>
-                          ) : null}
-                        </>
-                      )}
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className="text-xs font-medium text-slate-500">
+                            {category.count} link{category.count === 1 ? '' : 's'}
+                          </span>
+                          <div className="h-1.5 min-w-[56px] flex-1 overflow-hidden rounded-full bg-slate-100">
+                            <div className="h-full rounded-full bg-[#156fe6]" style={{ width: `${percent}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                      {category.name !== 'uncategorized' && editingCategory !== category.name ? (
+                        <button
+                          type="button"
+                          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-white hover:text-[#156fe6]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startRenameCategory(category.name);
+                          }}
+                          aria-label={`Edit ${category.name} category`}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      ) : null}
                     </div>
-                    <p className="line-clamp-2 text-[10px] leading-4 text-slate-500">
-                      {category.count === 1 ? '1 saved link' : `${category.count} saved links`} in this category.
-                    </p>
+                    {editingCategory === category.name ? (
+                      <button
+                        type="button"
+                        className="ml-[52px] mt-2 h-8 rounded-lg border border-slate-300 bg-white px-2 text-[10px] font-semibold text-slate-600 hover:bg-slate-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingCategory(null);
+                          setEditedCategoryName('');
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    ) : null}
                   </div>
                 );
               })
             )}
           </div>
-        </div>
+        </aside>
 
-        <div className="w-full min-w-0 max-w-full xl:h-[calc(100vh-220px)]">
+        <section className="w-full min-w-0 max-w-full">
           {selectedCategory && selectedCategoryStat ? (
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 xl:flex xl:h-full xl:min-w-0 xl:flex-col xl:overflow-hidden">
-              <p className="text-xl font-semibold text-slate-900">{selectedCategory}</p>
-              <p className="mt-1 text-slate-500">
-                {selectedCategoryStat.count} link{selectedCategoryStat.count === 1 ? '' : 's'} currently in this category.
-              </p>
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="bg-gradient-to-r from-slate-950 to-slate-800 p-5 text-white">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0">
+                    <div className="mb-3 flex items-center gap-3">
+                      <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/10 text-white ring-1 ring-white/15">
+                      {(() => {
+                        const Icon = getCategoryIcon(selectedCategory);
+                        return <Icon className="h-5 w-5" />;
+                      })()}
+                    </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-white/55">Selected collection</p>
+                        <h2 className="truncate text-3xl font-semibold tracking-tight">{selectedCategory}</h2>
+                      </div>
+                    </div>
+                    <p className="max-w-2xl text-sm leading-6 text-white/70">
+                      {selectedCategoryStat.count} link{selectedCategoryStat.count === 1 ? '' : 's'} currently in this category.
+                      {searchTerm.trim() ? ` Showing ${visibleCategoryLinks.length} matching result${visibleCategoryLinks.length === 1 ? '' : 's'}.` : ''}
+                    </p>
+                  </div>
+                  <Button className="h-11 rounded-xl bg-white px-4 font-semibold text-slate-950 hover:bg-blue-50" onClick={() => setShowAddModal(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Link
+                  </Button>
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl bg-white/10 p-3 ring-1 ring-white/10">
+                    <p className="text-xs font-medium text-white/55">All Categories</p>
+                    <p className="mt-1 text-2xl font-semibold">{categoryStats.length}</p>
+                  </div>
+                  <div className="rounded-xl bg-white/10 p-3 ring-1 ring-white/10">
+                    <p className="text-xs font-medium text-white/55">Organized Links</p>
+                    <p className="mt-1 text-2xl font-semibold">{totalCategoryLinks}</p>
+                  </div>
+                  <div className="rounded-xl bg-white/10 p-3 ring-1 ring-white/10">
+                    <p className="text-xs font-medium text-white/55">Top Category</p>
+                    <p className="mt-1 truncate text-2xl font-semibold">{topCategory?.name || 'None'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 border-b border-slate-100 bg-white px-5 py-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[#edf3ff] px-3 py-1.5 text-xs font-semibold text-[#156fe6]">
+                    <Folder className="h-3.5 w-3.5" />
+                    {selectedCategory}
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
+                    <Link2 className="h-3.5 w-3.5" />
+                    {visibleCategoryLinks.length} visible
+                  </span>
+                </div>
+                <p className="text-sm text-slate-500">
+                  {searchTerm.trim() ? `Filtered by "${searchTerm.trim()}"` : 'Latest saved links appear first'}
+                </p>
+              </div>
+
               {isLoadingLinks ? (
-                <p className="mt-5 text-sm text-slate-500">Loading links...</p>
+                <div className="m-5 flex min-h-[260px] items-center justify-center rounded-xl bg-slate-50 text-sm text-slate-500">Loading links...</div>
               ) : visibleCategoryLinks.length === 0 ? (
-                <p className="mt-5 text-sm text-slate-500">No links found in this category.</p>
+                <div className="m-5 flex min-h-[260px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                  <Folder className="mb-3 h-8 w-8 text-slate-400" />
+                  <p className="text-base font-semibold text-slate-900">No links found</p>
+                  <p className="mt-1 text-sm text-slate-500">Add a link or adjust your search for this category.</p>
+                </div>
               ) : (
-                <div className="mt-5 min-h-0 flex-1 overflow-y-auto pr-1">
-                  <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
+                <div className="min-h-[820px] max-h-[820px] overflow-y-auto p-5">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
                     {visibleCategoryLinks.map((link) => (
                       <LinkCard
                         key={link._id}
@@ -382,7 +467,7 @@ export default function Categories() {
               )}
             </div>
           ) : null}
-        </div>
+        </section>
       </div>
       </>
       )}

@@ -37,6 +37,8 @@ import {
   ChartTooltipContent,
 } from '../components/ui/chart';
 import type { ChartConfig } from '../components/ui/chart';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../store/store';
 
 interface AnalyticsData {
   totals: {
@@ -96,15 +98,21 @@ const categoryConfig = {
   },
 } satisfies ChartConfig;
 
-let cachedAnalytics: AnalyticsData | null = null;
+const SETTINGS_STORAGE_KEY = 'savemyurls.settings';
+const cachedAnalyticsByUser = new Map<string, AnalyticsData>();
 
-const readAnalyticsSettings = () => {
+const getUserStorageKey = (userId?: string, email?: string) =>
+  userId || email ? `${SETTINGS_STORAGE_KEY}.${userId || email}` : SETTINGS_STORAGE_KEY;
+
+const getUserCacheKey = (userId?: string, email?: string) => userId || email || 'anonymous';
+
+const readAnalyticsSettings = (settingsKey = SETTINGS_STORAGE_KEY) => {
   if (typeof window === 'undefined') {
     return { analyticsRange: 30, hideVaultCounts: false, openLinksInNewTab: true };
   }
 
   try {
-    const settings = JSON.parse(localStorage.getItem('savemyurls.settings') || '{}');
+    const settings = JSON.parse(localStorage.getItem(settingsKey) || localStorage.getItem(SETTINGS_STORAGE_KEY) || '{}');
     return {
       analyticsRange: Number(settings.analyticsRange || 30),
       hideVaultCounts: Boolean(settings.hideVaultCounts),
@@ -122,10 +130,14 @@ const formatDate = (value: string) =>
   });
 
 export default function Analytics() {
+  const { user } = useSelector((state: RootState) => state.auth);
+  const userId = (user as any)?._id || (user as any)?.id;
+  const settingsKey = getUserStorageKey(userId, user?.email);
+  const cacheKey = getUserCacheKey(userId, user?.email);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const analyticsSettings = readAnalyticsSettings();
+  const analyticsSettings = readAnalyticsSettings(settingsKey);
 
   const fetchAnalytics = async () => {
     setIsLoading(true);
@@ -133,7 +145,7 @@ export default function Analytics() {
 
     try {
       const response = await urlsAPI.getAnalytics();
-      cachedAnalytics = response.data;
+      cachedAnalyticsByUser.set(cacheKey, response.data);
       setAnalytics(response.data);
     } catch (error: any) {
       setError(error.response?.data?.error || 'Failed to load analytics');
@@ -143,14 +155,16 @@ export default function Analytics() {
   };
 
   useEffect(() => {
+    const cachedAnalytics = cachedAnalyticsByUser.get(cacheKey);
     if (cachedAnalytics) {
       setAnalytics(cachedAnalytics);
       setIsLoading(false);
       return;
     }
 
+    setAnalytics(null);
     fetchAnalytics();
-  }, []);
+  }, [cacheKey]);
 
   const weeklySaves = useMemo(() => {
     if (!analytics) return 0;

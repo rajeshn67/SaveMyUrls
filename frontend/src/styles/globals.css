@@ -145,4 +145,19 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  .app-search-input::placeholder {
+    color: #8da0bd;
+    opacity: 1;
+  }
+
+  .app-search-input:-webkit-autofill,
+  .app-search-input:-webkit-autofill:hover,
+  .app-search-input:-webkit-autofill:focus,
+  .app-search-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px white inset !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a;
+    transition: background-color 9999s ease-out;
+  }
 }

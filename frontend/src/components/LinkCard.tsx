@@ -7,7 +7,10 @@ import type { URL } from '../store/urlsSlice';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Pencil, Trash2, Star, Link, Pin, Copy, ExternalLink, Lock, MoreHorizontal } from 'lucide-react';
+import { CalendarDays, Pencil, Trash2, Star, Link, Pin, Copy, ExternalLink, Lock, MoreHorizontal, Tag } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +58,9 @@ const readCardSettings = () => {
 export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
   const dispatch = useDispatch<AppDispatch>();
   const [isLoading, setIsLoading] = useState(false);
+  const [showVaultDialog, setShowVaultDialog] = useState(false);
+  const [vaultPassword, setVaultPassword] = useState('');
+  const [vaultError, setVaultError] = useState('');
   const cardSettings = readCardSettings();
   const openInNewTab = cardSettings.openLinksInNewTab;
   const isComfortable = cardSettings.dashboardDensity === 'comfortable';
@@ -70,6 +76,7 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
 
   const faviconUrl = `https://www.google.com/s2/favicons?sz=128&domain=${encodeURIComponent(siteDomain || url.url)}`;
   const previewSrc = url.thumbnail || faviconUrl;
+  const descriptionText = url.description?.trim() || `Saved from ${siteDomain || url.domain || 'this website'}. Add a description to make this resource easier to find later.`;
 
   const toggleFavorite = async () => {
     setIsLoading(true);
@@ -96,17 +103,29 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
     }
   };
 
+  const openVaultDialog = () => {
+    setVaultPassword('');
+    setVaultError('');
+    setShowVaultDialog(true);
+  };
+
   const moveToVault = async () => {
-    const password = window.prompt('Enter Vault Password');
-    if (!password) return;
+    const password = vaultPassword.trim();
+    if (!password) {
+      setVaultError('Vault password is required');
+      return;
+    }
 
     setIsLoading(true);
+    setVaultError('');
     try {
       await urlsAPI.toggleSecret(url._id, password);
       dispatch(deleteUrl(url._id));
       onRefresh?.();
+      setShowVaultDialog(false);
+      setVaultPassword('');
     } catch (error: any) {
-      window.alert(error.response?.data?.error || 'Failed to move link to vault');
+      setVaultError(error.response?.data?.error || 'Failed to move link to vault');
     } finally {
       setIsLoading(false);
     }
@@ -147,12 +166,13 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
   };
 
   return (
-    <Card className={`group overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg ${isComfortable ? 'w-[220px]' : 'w-[180px]'}`}>
-      <div className={`relative overflow-hidden bg-slate-100 ${isComfortable ? 'h-28' : 'h-20'}`}>
+    <>
+      <Card className="group w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl">
+        <div className={`relative overflow-hidden bg-slate-100 ${isComfortable ? 'h-28' : 'h-24'}`}>
         <img
           src={previewSrc}
           alt={`${siteDomain || 'site'} preview`}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           onError={(event) => {
             if (event.currentTarget.src !== faviconUrl) {
               event.currentTarget.src = faviconUrl;
@@ -160,87 +180,103 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
           }}
         />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/30 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-slate-950/5 to-transparent" />
 
-        <div className="absolute left-2.5 bottom-2.5 flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 shadow-sm">
+        <div className="absolute left-3 top-3 flex max-w-[calc(100%-72px)] items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 shadow-sm">
           <img
             src={faviconUrl}
             alt={`${url.domain || 'site'} favicon`}
-            className="h-6 w-6 rounded-full border border-slate-200 bg-white object-cover"
+            className="h-5 w-5 rounded-full border border-slate-200 bg-white object-cover"
           />
-          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700">
+          <span className="truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700">
             {siteDomain || url.domain || 'site'}
           </span>
         </div>
+
+        <button
+          type="button"
+          onClick={toggleFavorite}
+          disabled={isLoading}
+          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[#f3bf42] shadow-sm transition hover:scale-105 hover:bg-white"
+          aria-label={url.isFavorite ? 'Remove favorite' : 'Mark favorite'}
+        >
+          <Star className={`h-4 w-4 ${url.isFavorite ? 'fill-current' : ''}`} />
+        </button>
+
+        <div className="absolute bottom-3 left-3 right-3">
+          <h3 className="line-clamp-1 text-base font-semibold leading-tight text-white drop-shadow">
+            {url.title}
+          </h3>
+          <a
+            href={normalizedUrl}
+            target={openInNewTab ? '_blank' : undefined}
+            rel={openInNewTab ? 'noopener noreferrer' : undefined}
+            className="mt-1 inline-flex max-w-full items-center gap-1 text-xs font-medium text-white/85 transition hover:text-white"
+          >
+            <span className="truncate">{normalizedUrl.replace(/^https?:\/\//i, '')}</span>
+            <ExternalLink className="h-3 w-3 flex-shrink-0" />
+          </a>
+        </div>
       </div>
 
-      <CardContent className={`flex flex-col justify-between px-2.5 pb-2 pt-2 ${isComfortable ? 'h-[170px]' : 'h-[140px]'}`}>
-        <div className="space-y-0.5">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="min-w-0 line-clamp-1 text-sm font-semibold leading-snug text-slate-900">
-              <a
-                href={normalizedUrl}
-                target={openInNewTab ? '_blank' : undefined}
-                rel={openInNewTab ? 'noopener noreferrer' : undefined}
-                className="inline-flex items-center gap-2 hover:text-blue-600"
-              >
-                <span className="truncate">{url.title}</span>
-                <Link className="h-3.5 w-3.5 text-slate-400" />
-              </a>
-            </h3>
-            <button
-              type="button"
-              onClick={toggleFavorite}
-              disabled={isLoading}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#f3bf42] shadow-sm transition hover:bg-slate-50"
-            >
-              <Star className={`h-4 w-4 ${url.isFavorite ? 'fill-current' : ''}`} />
-            </button>
-          </div>
+      <CardContent className={`flex flex-col justify-between p-3 ${isComfortable ? 'min-h-[178px]' : 'min-h-[154px]'}`}>
+        <div className="space-y-2">
           {cardSettings.showDescriptions ? (
-            <div className="min-h-[40px]">
-              {url.description ? (
-              <p className="line-clamp-2 text-[11px] leading-5 text-slate-500">
-                {url.description}
+            <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
+              <p className={`text-xs leading-5 ${url.description ? 'text-slate-600' : 'text-slate-400'} ${isComfortable ? 'line-clamp-3' : 'line-clamp-2'}`}>
+                {descriptionText}
               </p>
-              ) : (
-              <p className="text-[11px] leading-5 text-slate-400">No description available</p>
-              )}
             </div>
           ) : null}
-        </div>
 
-        <div className="flex flex-wrap items-center gap-1">
-          <Badge variant="secondary" className="rounded-full bg-[#edf3ff] px-2 py-0.5 text-[10px] font-semibold text-[#156fe6]">
-            {url.category || 'Uncategorized'}
-          </Badge>
-          {url.isPinned && (
-            <Badge variant="secondary" className="rounded-full bg-amber-100 px-1.5 py-0.5 text-amber-700">
-              <Pin className="h-3 w-3" />
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary" className="rounded-full bg-[#edf3ff] px-2.5 py-1 text-[11px] font-semibold text-[#156fe6]">
+              <Tag className="h-3 w-3" />
+              {url.category || 'Uncategorized'}
             </Badge>
-          )}
-          <span className="text-[10px] text-slate-500">{getDisplayDate()}</span>
+            {url.isPinned ? (
+              <Badge variant="secondary" className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                <Pin className="h-3 w-3" />
+                Pinned
+              </Badge>
+            ) : null}
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+              <CalendarDays className="h-3 w-3" />
+              {getDisplayDate()}
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center justify-between gap-1 border-t border-slate-100 pt-1">
-          <div className="text-[10px] text-slate-500">{url.tags?.length ? `${url.tags.length} tags` : 'No tags'}</div>
-          <div className="flex items-center gap-1">
+        <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
+          <div className="min-w-0 text-xs text-slate-500">{url.tags?.length ? `${url.tags.length} tags` : 'No tags yet'}</div>
+          <div className="flex items-center gap-1.5">
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="h-6 w-6 rounded-xl text-slate-500 hover:bg-slate-100"
-              onClick={() => onEdit?.(url)}
+              className="h-8 w-8 rounded-xl text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+              onClick={() => openInNewTab ? window.open(normalizedUrl, '_blank') : window.location.assign(normalizedUrl)}
+              aria-label="Open link"
             >
-              <Pencil className="h-3 w-3" />
+              <Link className="h-3.5 w-3.5" />
             </Button>
-            <Button type="button" variant="ghost" size="icon" onClick={handleDelete} className="h-6 w-6 rounded-xl text-slate-500 hover:bg-slate-100">
-              <Trash2 className="h-3 w-3" />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-xl text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+              onClick={() => onEdit?.(url)}
+              aria-label="Edit link"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button type="button" variant="ghost" size="icon" onClick={handleDelete} className="h-8 w-8 rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600" aria-label="Delete link">
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="icon" className="h-6 w-6 rounded-xl text-slate-500 hover:bg-slate-100">
-                  <MoreHorizontal className="h-3.5 w-3.5" />
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-slate-500 hover:bg-slate-100" aria-label="More actions">
+                  <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -256,7 +292,7 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
                   <Pin className="mr-2 h-4 w-4" />
                   {url.isPinned ? 'Unpin from Top' : 'Pin to Top'}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={moveToVault}>
+                <DropdownMenuItem onClick={openVaultDialog}>
                   <Lock className="mr-2 h-4 w-4" />
                   Move to Vault
                 </DropdownMenuItem>
@@ -268,7 +304,60 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
             </DropdownMenu>
           </div>
         </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showVaultDialog} onOpenChange={setShowVaultDialog}>
+        <DialogContent className="rounded-2xl border-slate-200 sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Move to Private Vault</DialogTitle>
+            <DialogDescription>
+              Enter your vault password to hide this link from the main library.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <Label htmlFor={`vault-password-${url._id}`}>Vault Password</Label>
+            <Input
+              id={`vault-password-${url._id}`}
+              type="password"
+              value={vaultPassword}
+              onChange={(event) => {
+                setVaultPassword(event.target.value);
+                setVaultError('');
+              }}
+              className="h-11 border-slate-300"
+              autoFocus
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  moveToVault();
+                }
+              }}
+            />
+            {vaultError ? <p className="text-sm text-red-500">{vaultError}</p> : null}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowVaultDialog(false)}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="bg-[#156fe6] hover:bg-[#0f64d8]"
+              onClick={moveToVault}
+              disabled={isLoading || !vaultPassword.trim()}
+            >
+              {isLoading ? 'Moving...' : 'Move Link'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

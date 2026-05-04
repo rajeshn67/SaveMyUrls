@@ -32,6 +32,7 @@ export default function Dashboard() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingLink, setEditingLink] = useState<URL | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [settingsVersion, setSettingsVersion] = useState(0);
   const dashboardSettings = readDashboardSettings();
 
   useEffect(() => {
@@ -39,6 +40,12 @@ export default function Dashboard() {
       fetchUrls();
     }
   }, [urls.length]);
+
+  useEffect(() => {
+    const handleSettingsChange = () => setSettingsVersion((version) => version + 1);
+    window.addEventListener('savemyurls-settings-changed', handleSettingsChange);
+    return () => window.removeEventListener('savemyurls-settings-changed', handleSettingsChange);
+  }, []);
 
   const fetchUrls = async () => {
     dispatch(setLoading(true));
@@ -52,6 +59,9 @@ export default function Dashboard() {
       dispatch(setLoading(false));
     }
   };
+
+  const favoriteCount = urls.filter((url) => url.isFavorite).length;
+  const pinnedCount = urls.filter((url) => url.isPinned).length;
 
   const filteredUrls = urls.filter((url) => {
     const matchesCategory = filter.category === 'all' || url.category === filter.category;
@@ -94,17 +104,18 @@ export default function Dashboard() {
       onSearchChange={setSearchTerm}
       searchPlaceholder="Search by title, domain, tag..."
     >
-      <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-sm text-slate-500">Your saved bookmarks are organized in a modern workspace.</p>
+      <div className="mb-5 grid gap-3 md:grid-cols-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Total Library</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-900">{urls.length}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
-            Filter
-          </button>
-          <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
-            Sort
-          </button>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Favorites</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-900">{favoriteCount}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Pinned</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-900">{pinnedCount}</p>
         </div>
       </div>
 
@@ -112,20 +123,21 @@ export default function Dashboard() {
       {isLoading ? (
         <p className="text-slate-500">Loading your links...</p>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
           <button
             onClick={() => setShowAddModal(true)}
-            className="group flex min-h-[170px] w-full flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-3 text-center transition hover:border-blue-400 hover:bg-slate-50"
+            className="group flex min-h-[256px] w-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-4 text-center shadow-sm transition hover:-translate-y-1 hover:border-blue-400 hover:bg-blue-50/40 hover:shadow-lg"
           >
-            <span className="mb-3 inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-sm text-blue-600 transition group-hover:bg-blue-50">
+            <span className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-2xl text-blue-600 transition group-hover:bg-blue-100">
               +
             </span>
-            <span className="text-sm font-semibold text-slate-900">Add New</span>
+            <span className="text-base font-semibold text-slate-900">Add New Link</span>
+            <span className="mt-1 max-w-[170px] text-sm leading-6 text-slate-500">Save a useful resource into your library.</span>
           </button>
 
           {filteredUrls.map((url) => (
             <LinkCard
-              key={url._id}
+              key={`${url._id}-${settingsVersion}`}
               url={url}
               onEdit={(selectedUrl) => {
                 setEditingLink(selectedUrl);

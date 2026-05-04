@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import AppShell from '../components/AppShell';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import {
   Select,
@@ -25,7 +24,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
-import { urlsAPI } from '../services/api';
+import { authAPI, urlsAPI } from '../services/api';
 import { lockVault } from '../store/vaultSlice';
 import { AppDispatch, RootState } from '../store/store';
 
@@ -49,6 +48,8 @@ type SettingsPreferences = {
   showPinnedFirst: boolean;
 };
 
+const DEFAULT_CATEGORY = 'uncategorized';
+
 const defaultPreferences: SettingsPreferences = {
   activityAlerts: true,
   analyticsRange: '30',
@@ -57,7 +58,7 @@ const defaultPreferences: SettingsPreferences = {
   confirmBeforeDelete: true,
   copyFormat: 'url',
   dashboardDensity: 'compact',
-  defaultCategory: 'General',
+  defaultCategory: DEFAULT_CATEGORY,
   defaultSort: 'newest',
   defaultView: 'dashboard',
   emailDigest: true,
@@ -71,12 +72,24 @@ const defaultPreferences: SettingsPreferences = {
 
 const storageKey = 'savemyurls.settings';
 
-const readPreferences = (): SettingsPreferences => {
+const getUserSettingsKey = (userId?: string, email?: string) =>
+  userId || email ? `${storageKey}.${userId || email}` : storageKey;
+
+const normalizePreferences = (preferences: SettingsPreferences): SettingsPreferences => ({
+  ...preferences,
+  defaultCategory:
+    String(preferences.defaultCategory || '').trim().toLowerCase() === 'general'
+      ? DEFAULT_CATEGORY
+      : preferences.defaultCategory || DEFAULT_CATEGORY,
+});
+
+const readPreferences = (key = storageKey): SettingsPreferences => {
   if (typeof window === 'undefined') return defaultPreferences;
 
   try {
-    const stored = localStorage.getItem(storageKey);
-    return stored ? { ...defaultPreferences, ...JSON.parse(stored) } : defaultPreferences;
+    const stored = localStorage.getItem(key);
+    const preferences = stored ? { ...defaultPreferences, ...JSON.parse(stored) } : defaultPreferences;
+    return normalizePreferences(preferences);
   } catch {
     return defaultPreferences;
   }
@@ -85,25 +98,53 @@ const readPreferences = (): SettingsPreferences => {
 const csvEscape = (value: string | number | boolean | undefined) =>
   `"${String(value ?? '').replace(/"/g, '""')}"`;
 
+type CategoryOption = {
+  name: string;
+  count?: number;
+};
+
+type UserCategoryOption = {
+  name?: string;
+};
+
 export default function Settings() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
   const { urls } = useSelector((state: RootState) => state.urls);
   const { isUnlocked } = useSelector((state: RootState) => state.vault);
-  const [preferences, setPreferences] = useState<SettingsPreferences>(readPreferences);
+  const settingsKey = getUserSettingsKey((user as any)?._id || (user as any)?.id, user?.email);
+  const [preferences, setPreferences] = useState<SettingsPreferences>(() => readPreferences(settingsKey));
   const [status, setStatus] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [visibleLinkCount, setVisibleLinkCount] = useState(urls.length);
   const [categoryNames, setCategoryNames] = useState<string[]>([]);
 
   useEffect(() => {
+    setPreferences(readPreferences(settingsKey));
+  }, [settingsKey]);
+
+  useEffect(() => {
     const fetchSettingsData = async () => {
       try {
-        const response = await urlsAPI.getUrls();
-        const liveUrls = response.data || [];
+        const [urlsResponse, categoriesResponse, profileResponse] = await Promise.all([
+          urlsAPI.getUrls(),
+          urlsAPI.getCategories(),
+          authAPI.getMe(),
+        ]);
+        const liveUrls = urlsResponse.data || [];
+        const liveCategories = categoriesResponse.data || [];
+        const profileCategories = profileResponse.data?.user?.categories || profileResponse.data?.categories || [];
+
         setVisibleLinkCount(liveUrls.length);
-        setCategoryNames(liveUrls.map((url: typeof urls[number]) => url.category).filter(Boolean));
+        const nextCategoryNames = [
+          ...liveCategories.map((category: CategoryOption) => category.name).filter(Boolean),
+          ...liveUrls.map((url: typeof urls[number]) => url.category).filter(Boolean),
+          ...profileCategories.map((category: UserCategoryOption | string) =>
+            typeof category === 'string' ? category : category.name
+          ).filter(Boolean),
+        ];
+        setCategoryNames(nextCategoryNames);
       } catch {
         setVisibleLinkCount(urls.length);
         setCategoryNames(urls.map((url) => url.category).filter(Boolean));
@@ -111,17 +152,30 @@ export default function Settings() {
     };
 
     fetchSettingsData();
-  }, [urls]);
+  }, [settingsKey, urls]);
 
   const categoryOptions = useMemo(() => {
-    const names = categoryNames.length ? categoryNames : urls.map((url) => url.category).filter(Boolean);
-    return Array.from(new Set(['General', ...names, preferences.defaultCategory]));
-  }, [categoryNames, preferences.defaultCategory, urls]);
+    const options = [DEFAULT_CATEGORY, ...categoryNames]
+      .map((category) => String(category || '').trim())
+      .filter((category) => category && category.toLowerCase() !== 'general');
+    return Array.from(new Set(options));
+  }, [categoryNames]);
+
+  useEffect(() => {
+    if (!categoryOptions.length) return;
+    const currentCategory = normalizePreferences(preferences).defaultCategory;
+    const existsForUser = categoryOptions.some(
+      (category) => category.toLowerCase() === currentCategory.toLowerCase()
+    );
+    if (existsForUser) return;
+
+    savePreferences({ ...preferences, defaultCategory: DEFAULT_CATEGORY }, 'Default category reset');
+  }, [categoryOptions, preferences.defaultCategory]);
 
   const savePreferences = (nextPreferences: SettingsPreferences, message = 'Settings saved') => {
     setPreferences(nextPreferences);
     if (typeof window !== 'undefined') {
-      localStorage.setItem(storageKey, JSON.stringify(nextPreferences));
+      localStorage.setItem(settingsKey, JSON.stringify(nextPreferences));
       window.dispatchEvent(new Event('savemyurls-settings-changed'));
     }
     setStatus(message);
@@ -221,18 +275,25 @@ export default function Settings() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="defaultCategory">Default Category</Label>
-                <Input
-                  id="defaultCategory"
-                  list="settingsCategoryOptions"
+                <Select
                   value={preferences.defaultCategory}
-                  onChange={(event) => handlePreferenceChange('defaultCategory', event.target.value)}
-                  className="h-10 border-slate-300"
-                />
-                <datalist id="settingsCategoryOptions">
-                  {categoryOptions.map((category) => (
-                    <option key={category} value={category} />
-                  ))}
-                </datalist>
+                  onValueChange={(value) => handlePreferenceChange('defaultCategory', value)}
+                >
+                  <SelectTrigger id="defaultCategory" className="h-10 w-full border-slate-300">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent
+                    className="max-h-[220px]"
+                    viewportClassName="overflow-y-auto"
+                    viewportStyle={{ maxHeight: '180px' }}
+                  >
+                    {categoryOptions.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

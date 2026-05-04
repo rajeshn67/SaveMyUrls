@@ -122,7 +122,7 @@ export default function PrivateVault() {
               <p className="mt-1 text-sm text-slate-500">Save your first hidden resource in the vault.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
               {vaultLinks.map((url) => (
                 <SecretLinkCard key={url._id} url={url} />
               ))}

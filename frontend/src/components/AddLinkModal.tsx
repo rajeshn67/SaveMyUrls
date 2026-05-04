@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { urlsAPI } from '../services/api';
 import type { URL } from '../store/urlsSlice';
+import type { RootState } from '../store/store';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -21,8 +23,36 @@ interface AddLinkModalProps {
 }
 
 const DEFAULT_CATEGORY = 'uncategorized';
+const SETTINGS_STORAGE_KEY = 'savemyurls.settings';
 
-const readLinkSettings = () => {
+const normalizeDefaultCategory = (value: unknown) => {
+  const normalized = String(value || '').trim();
+  return !normalized || normalized.toLowerCase() === 'general' ? DEFAULT_CATEGORY : normalized;
+};
+
+const formatCategoryLabel = (value: string) =>
+  value === DEFAULT_CATEGORY ? 'Uncategorized' : value;
+
+const mergeCategoryOptions = (...groups: Array<Array<string | undefined>>) => {
+  const categoryMap = new Map<string, string>();
+
+  groups.flat().forEach((category) => {
+    const normalized = normalizeDefaultCategory(category);
+    categoryMap.set(normalized.toLowerCase(), normalized);
+  });
+
+  categoryMap.set(DEFAULT_CATEGORY, DEFAULT_CATEGORY);
+  return Array.from(categoryMap.values()).sort((a, b) => {
+    if (a === DEFAULT_CATEGORY) return -1;
+    if (b === DEFAULT_CATEGORY) return 1;
+    return a.localeCompare(b);
+  });
+};
+
+const getUserSettingsKey = (userId?: string, email?: string) =>
+  userId || email ? `${SETTINGS_STORAGE_KEY}.${userId || email}` : SETTINGS_STORAGE_KEY;
+
+const readLinkSettings = (settingsKey = SETTINGS_STORAGE_KEY) => {
   if (typeof window === 'undefined') {
     return {
       autoFavoriteNewLinks: false,
@@ -32,10 +62,10 @@ const readLinkSettings = () => {
   }
 
   try {
-    const settings = JSON.parse(localStorage.getItem('savemyurls.settings') || '{}');
+    const settings = JSON.parse(localStorage.getItem(settingsKey) || '{}');
     return {
       autoFavoriteNewLinks: Boolean(settings.autoFavoriteNewLinks),
-      defaultCategory: String(settings.defaultCategory || DEFAULT_CATEGORY).trim().toLowerCase(),
+      defaultCategory: normalizeDefaultCategory(settings.defaultCategory),
       requireDescription: Boolean(settings.requireDescription),
     };
   } catch {
@@ -48,6 +78,8 @@ const readLinkSettings = () => {
 };
 
 export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModalProps) {
+  const { user } = useSelector((state: RootState) => state.auth);
+  const settingsKey = getUserSettingsKey((user as any)?._id || (user as any)?.id, user?.email);
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [description, setDescription] = useState('');
@@ -59,21 +91,28 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
   useEffect(() => {
     const fetchCategories = async () => {
       if (!isOpen) return;
-      const settings = readLinkSettings();
+      const settings = readLinkSettings(settingsKey);
+      const initialCategories = mergeCategoryOptions([DEFAULT_CATEGORY, settings.defaultCategory]);
+      setCategories(initialCategories);
+      setCategory(settings.defaultCategory);
+
       try {
         const response = await urlsAPI.getCategories();
         const backendCategories = (response.data || []).map((item: { name: string }) => item.name);
-        const merged = Array.from(new Set([DEFAULT_CATEGORY, settings.defaultCategory, ...backendCategories]));
+        const merged = mergeCategoryOptions([DEFAULT_CATEGORY, settings.defaultCategory], backendCategories);
         setCategories(merged);
-        setCategory(merged.includes(settings.defaultCategory) ? settings.defaultCategory : DEFAULT_CATEGORY);
+        const matchingDefault = merged.find(
+          (item) => item.toLowerCase() === settings.defaultCategory.toLowerCase()
+        );
+        setCategory(matchingDefault || DEFAULT_CATEGORY);
       } catch {
-        setCategories([DEFAULT_CATEGORY, settings.defaultCategory]);
+        setCategories(initialCategories);
         setCategory(settings.defaultCategory || DEFAULT_CATEGORY);
       }
     };
 
     fetchCategories();
-  }, [isOpen]);
+  }, [isOpen, settingsKey]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -94,7 +133,7 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
       setDescriptionError('Description must be 70 characters or less');
       return;
     }
-    const settings = readLinkSettings();
+    const settings = readLinkSettings(settingsKey);
     if (settings.requireDescription && charCount === 0) {
       setDescriptionError('Description is required by your settings');
       return;
@@ -125,10 +164,11 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
   };
 
   const resetForm = () => {
+    const settings = readLinkSettings(settingsKey);
     setTitle('');
     setUrl('');
     setDescription('');
-    setCategory(DEFAULT_CATEGORY);
+    setCategory(settings.defaultCategory || DEFAULT_CATEGORY);
     setNewCategoryName('');
     setCategoryError('');
     setDescriptionError('');
@@ -151,7 +191,7 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
       await urlsAPI.createCategory(trimmedName);
       const response = await urlsAPI.getCategories();
       const backendCategories = (response.data || []).map((item: { name: string }) => item.name);
-      const merged = Array.from(new Set([DEFAULT_CATEGORY, ...backendCategories]));
+      const merged = mergeCategoryOptions([DEFAULT_CATEGORY], backendCategories, [trimmedName]);
       setCategories(merged);
       setCategory(trimmedName);
       setNewCategoryName('');
@@ -233,13 +273,17 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
           <div className="space-y-2">
             <Label htmlFor="category">Collection / Category</Label>
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger id="category" className="h-12 border-slate-300">
-                <SelectValue />
+              <SelectTrigger id="category" className="h-12 w-full border-slate-300">
+                <SelectValue placeholder={formatCategoryLabel(category || DEFAULT_CATEGORY)} />
               </SelectTrigger>
-              <SelectContent className="max-h-52">
+              <SelectContent
+                className="max-h-[220px]"
+                viewportClassName="overflow-y-auto"
+                viewportStyle={{ maxHeight: '180px' }}
+              >
                 {categories.map((cat) => (
                   <SelectItem key={cat} value={cat}>
-                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    {formatCategoryLabel(cat)}
                   </SelectItem>
                 ))}
               </SelectContent>
