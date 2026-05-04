@@ -9,6 +9,22 @@ import LinkCard from '../components/LinkCard';
 import EditLinkModal from '../components/EditLinkModal';
 import { URL } from '../store/urlsSlice';
 
+const readDashboardSettings = () => {
+  if (typeof window === 'undefined') {
+    return { defaultSort: 'newest', showPinnedFirst: true };
+  }
+
+  try {
+    const settings = JSON.parse(localStorage.getItem('savemyurls.settings') || '{}');
+    return {
+      defaultSort: settings.defaultSort || 'newest',
+      showPinnedFirst: settings.showPinnedFirst !== false,
+    };
+  } catch {
+    return { defaultSort: 'newest', showPinnedFirst: true };
+  }
+};
+
 export default function Dashboard() {
   const dispatch = useDispatch() as AppDispatch;
   const { urls, isLoading, error, filter } = useSelector((state: RootState) => state.urls);
@@ -16,6 +32,7 @@ export default function Dashboard() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingLink, setEditingLink] = useState<URL | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const dashboardSettings = readDashboardSettings();
 
   useEffect(() => {
     if (urls.length === 0) {
@@ -48,17 +65,24 @@ export default function Dashboard() {
 
     return matchesCategory && matchesFavorite && matchesSearch;
   }).sort((a, b) => {
-    // Pinned items first
-    if (a.isPinned && !b.isPinned) return -1;
-    if (!a.isPinned && b.isPinned) return 1;
-    // If both pinned, sort by pinnedAt (most recent first)
-    if (a.isPinned && b.isPinned) {
+    if (dashboardSettings.showPinnedFirst && a.isPinned && !b.isPinned) return -1;
+    if (dashboardSettings.showPinnedFirst && !a.isPinned && b.isPinned) return 1;
+    if (dashboardSettings.showPinnedFirst && a.isPinned && b.isPinned) {
       const aTime = a.pinnedAt ? new Date(a.pinnedAt).getTime() : 0;
       const bTime = b.pinnedAt ? new Date(b.pinnedAt).getTime() : 0;
       return bTime - aTime;
     }
-    // If neither pinned, sort by createdAt (most recent first)
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+
+    switch (dashboardSettings.defaultSort) {
+      case 'oldest':
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      case 'title':
+        return a.title.localeCompare(b.title);
+      case 'domain':
+        return (a.domain || '').localeCompare(b.domain || '');
+      default:
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
   });
 
   return (

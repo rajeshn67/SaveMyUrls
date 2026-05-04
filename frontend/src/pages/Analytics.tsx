@@ -98,6 +98,23 @@ const categoryConfig = {
 
 let cachedAnalytics: AnalyticsData | null = null;
 
+const readAnalyticsSettings = () => {
+  if (typeof window === 'undefined') {
+    return { analyticsRange: 30, hideVaultCounts: false, openLinksInNewTab: true };
+  }
+
+  try {
+    const settings = JSON.parse(localStorage.getItem('savemyurls.settings') || '{}');
+    return {
+      analyticsRange: Number(settings.analyticsRange || 30),
+      hideVaultCounts: Boolean(settings.hideVaultCounts),
+      openLinksInNewTab: settings.openLinksInNewTab !== false,
+    };
+  } catch {
+    return { analyticsRange: 30, hideVaultCounts: false, openLinksInNewTab: true };
+  }
+};
+
 const formatDate = (value: string) =>
   new Date(value).toLocaleDateString('en-US', {
     month: 'short',
@@ -108,6 +125,7 @@ export default function Analytics() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const analyticsSettings = readAnalyticsSettings();
 
   const fetchAnalytics = async () => {
     setIsLoading(true);
@@ -153,13 +171,21 @@ export default function Analytics() {
     : 0;
   const topCategory = analytics?.categoryBreakdown[0];
   const topDomain = analytics?.domainBreakdown[0];
+  const visibleTotal = analytics
+    ? analyticsSettings.hideVaultCounts
+      ? analytics.totals.publicLinks
+      : analytics.totals.totalLinks
+    : 0;
+  const displayedActivity = analytics?.activity.slice(-analyticsSettings.analyticsRange) || [];
 
   const summaryCards = analytics
     ? [
         {
           label: 'Total Links',
-          value: analytics.totals.totalLinks,
-          detail: `${analytics.totals.publicLinks} visible, ${analytics.totals.secretLinks} private`,
+          value: visibleTotal,
+          detail: analyticsSettings.hideVaultCounts
+            ? `${analytics.totals.publicLinks} visible links`
+            : `${analytics.totals.publicLinks} visible, ${analytics.totals.secretLinks} private`,
           icon: Link2,
         },
         {
@@ -176,8 +202,8 @@ export default function Analytics() {
         },
         {
           label: 'Private Vault',
-          value: analytics.totals.secretLinks,
-          detail: `${vaultShare}% of all saved links`,
+          value: analyticsSettings.hideVaultCounts ? 'Hidden' : analytics.totals.secretLinks,
+          detail: analyticsSettings.hideVaultCounts ? 'Hidden by privacy setting' : `${vaultShare}% of all saved links`,
           icon: Lock,
         },
       ]
@@ -191,7 +217,7 @@ export default function Analytics() {
     >
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <p className="text-sm text-slate-500">
-          Track visible links, vault usage, categories, domains, and saving momentum.
+          Track visible links, categories, domains, and saving momentum.
         </p>
         <Button variant="outline" onClick={fetchAnalytics} disabled={isLoading} className="h-10 rounded-xl">
           <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -237,7 +263,7 @@ export default function Analytics() {
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold text-slate-900">Saving Activity</h2>
-                  <p className="mt-1 text-sm text-slate-500">New visible links saved over the last 30 days.</p>
+                  <p className="mt-1 text-sm text-slate-500">New visible links saved over the selected range.</p>
                 </div>
                 <Badge className="rounded-full bg-[#edf3ff] text-[#156fe6] hover:bg-[#edf3ff]">
                   <TrendingUp className="mr-1.5 h-3.5 w-3.5" />
@@ -246,7 +272,7 @@ export default function Analytics() {
                 </Badge>
               </div>
               <ChartContainer config={activityConfig} className="h-[190px] w-full">
-                <AreaChart data={analytics.activity} margin={{ left: 0, right: 8, top: 10 }}>
+                <AreaChart data={displayedActivity} margin={{ left: 0, right: 8, top: 10 }}>
                   <defs>
                     <linearGradient id="activityFill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#156fe6" stopOpacity={0.3} />
@@ -278,7 +304,7 @@ export default function Analytics() {
                     <Pie
                       data={[
                         { name: 'Visible', count: analytics.totals.publicLinks },
-                        { name: 'Private', count: analytics.totals.secretLinks },
+                        ...(analyticsSettings.hideVaultCounts ? [] : [{ name: 'Private', count: analytics.totals.secretLinks }]),
                         { name: 'Favorites', count: analytics.totals.favoriteLinks },
                         { name: 'Pinned', count: analytics.totals.pinnedLinks },
                       ].filter((item) => item.count > 0)}
@@ -394,8 +420,8 @@ export default function Analytics() {
                     <a
                       key={link._id}
                       href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      target={analyticsSettings.openLinksInNewTab ? '_blank' : undefined}
+                      rel={analyticsSettings.openLinksInNewTab ? 'noopener noreferrer' : undefined}
                       className="flex items-center gap-3 py-2.5 transition hover:bg-slate-50"
                     >
                       <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#edf3ff] text-[#156fe6]">
@@ -439,10 +465,10 @@ export default function Analytics() {
                 <div>
                   <div className="mb-2 flex justify-between text-sm">
                     <span className="text-slate-500">Vault share</span>
-                    <span className="font-semibold text-slate-900">{vaultShare}%</span>
+                    <span className="font-semibold text-slate-900">{analyticsSettings.hideVaultCounts ? 'Hidden' : `${vaultShare}%`}</span>
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
-                    <div className="h-full rounded-full bg-[#14b8a6]" style={{ width: `${vaultShare}%` }} />
+                    <div className="h-full rounded-full bg-[#14b8a6]" style={{ width: analyticsSettings.hideVaultCounts ? '0%' : `${vaultShare}%` }} />
                   </div>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-3">

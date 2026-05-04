@@ -13,9 +13,28 @@ interface SecretLinkCardProps {
   url: URL;
 }
 
+const readVaultDisplaySettings = () => {
+  if (typeof window === 'undefined') {
+    return { confirmBeforeDelete: true, copyFormat: 'url', maskVaultUrls: true, openLinksInNewTab: true };
+  }
+
+  try {
+    const settings = JSON.parse(localStorage.getItem('savemyurls.settings') || '{}');
+    return {
+      confirmBeforeDelete: settings.confirmBeforeDelete !== false,
+      copyFormat: settings.copyFormat || 'url',
+      maskVaultUrls: settings.maskVaultUrls !== false,
+      openLinksInNewTab: settings.openLinksInNewTab !== false,
+    };
+  } catch {
+    return { confirmBeforeDelete: true, copyFormat: 'url', maskVaultUrls: true, openLinksInNewTab: true };
+  }
+};
+
 export default function SecretLinkCard({ url }: SecretLinkCardProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const [isVisible, setIsVisible] = useState(false);
+  const displaySettings = readVaultDisplaySettings();
+  const [isVisible, setIsVisible] = useState(!displaySettings.maskVaultUrls);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const normalizedUrl = /^https?:\/\//i.test(url.url) ? url.url : `https://${url.url}`;
@@ -32,7 +51,7 @@ export default function SecretLinkCard({ url }: SecretLinkCardProps) {
   const previewSrc = url.thumbnail || faviconUrl;
 
   const handleDelete = async () => {
-    if (!window.confirm('Delete this private link?')) return;
+    if (displaySettings.confirmBeforeDelete && !window.confirm('Delete this private link?')) return;
 
     setIsDeleting(true);
     try {
@@ -43,6 +62,13 @@ export default function SecretLinkCard({ url }: SecretLinkCardProps) {
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleCopy = () => {
+    const text = displaySettings.copyFormat === 'markdown'
+      ? `[${url.title}](${normalizedUrl})`
+      : normalizedUrl;
+    navigator.clipboard.writeText(text);
   };
 
   return (
@@ -118,7 +144,7 @@ export default function SecretLinkCard({ url }: SecretLinkCardProps) {
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => navigator.clipboard.writeText(normalizedUrl)}
+                onClick={handleCopy}
                 className="h-8 w-8 rounded-xl text-slate-500 hover:bg-slate-100"
               >
                 <Copy className="h-3.5 w-3.5" />
@@ -127,7 +153,7 @@ export default function SecretLinkCard({ url }: SecretLinkCardProps) {
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => window.open(normalizedUrl, '_blank')}
+                onClick={() => displaySettings.openLinksInNewTab ? window.open(normalizedUrl, '_blank') : window.location.assign(normalizedUrl)}
                 className="h-8 w-8 rounded-xl text-slate-500 hover:bg-slate-100"
               >
                 <ExternalLink className="h-3.5 w-3.5" />

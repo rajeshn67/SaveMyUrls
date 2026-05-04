@@ -22,8 +22,17 @@ export const authAPI = {
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }),
   getMe: () => api.get('/auth/me'),
-  updateProfile: (fullName: string, location: string) =>
-    api.put('/auth/profile', { fullName, location }),
+  updateProfile: (profile: {
+    fullName: string;
+    location?: string;
+    bio?: string;
+    role?: string;
+    website?: string;
+    phone?: string;
+    timezone?: string;
+    socialHandle?: string;
+  }) =>
+    api.put('/auth/profile', profile),
   uploadAvatar: (file: File) => {
     const formData = new FormData();
     formData.append('avatar', file);

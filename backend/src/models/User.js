@@ -19,6 +19,25 @@ const userSchema = new mongoose.Schema(
     location: {
       type: String,
     },
+    bio: {
+      type: String,
+      maxlength: 220,
+    },
+    role: {
+      type: String,
+    },
+    website: {
+      type: String,
+    },
+    phone: {
+      type: String,
+    },
+    timezone: {
+      type: String,
+    },
+    socialHandle: {
+      type: String,
+    },
     avatar: {
       type: String,
     },

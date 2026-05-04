@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { BarChart3, Grid3X3, Star, Folder, UserRound, Settings, LogOut, Bell, Search, Bookmark, Link2, Lock } from 'lucide-react';
@@ -21,10 +21,10 @@ interface AppShellProps {
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: Grid3X3 },
-  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/favorites', label: 'Favorites', icon: Star },
   { to: '/categories', label: 'Categories', icon: Folder },
   { to: '/vault', label: 'Private Vault', icon: Lock },
+  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/profile', label: 'Profile', icon: UserRound },
 ];
 
@@ -42,7 +42,9 @@ export default function AppShell({
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { isUnlocked } = useSelector((state: RootState) => state.vault);
   const [localSearchValue, setLocalSearchValue] = useState('');
+  const [settingsVersion, setSettingsVersion] = useState(0);
 
   const inputValue = searchValue ?? localSearchValue;
 
@@ -53,6 +55,45 @@ export default function AppShell({
     }
     setLocalSearchValue(value);
   };
+
+  useEffect(() => {
+    if (!isUnlocked || typeof window === 'undefined') return;
+
+    let timeoutId: number | undefined;
+    const readAutoLockMinutes = () => {
+      try {
+        const settings = JSON.parse(localStorage.getItem('savemyurls.settings') || '{}');
+        return settings.autoLockMinutes || '15';
+      } catch {
+        return '15';
+      }
+    };
+
+    const autoLockMinutes = readAutoLockMinutes();
+    if (autoLockMinutes === 'never') return;
+
+    const resetTimer = () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(() => {
+        dispatch(lockVault());
+      }, Number(autoLockMinutes) * 60 * 1000);
+    };
+
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach((eventName) => window.addEventListener(eventName, resetTimer, { passive: true }));
+    resetTimer();
+
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+      events.forEach((eventName) => window.removeEventListener(eventName, resetTimer));
+    };
+  }, [dispatch, isUnlocked, settingsVersion]);
+
+  useEffect(() => {
+    const handleSettingsChange = () => setSettingsVersion((version) => version + 1);
+    window.addEventListener('savemyurls-settings-changed', handleSettingsChange);
+    return () => window.removeEventListener('savemyurls-settings-changed', handleSettingsChange);
+  }, []);
 
   return (
     <div className="h-screen overflow-hidden bg-[#f6f7fc] text-slate-900">
@@ -103,10 +144,15 @@ export default function AppShell({
         )}
 
         <div className="space-y-1 text-sm">
-          <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-slate-600 hover:bg-white">
+          <Link
+            to="/settings"
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition ${
+              location.pathname === '/settings' ? 'bg-white text-[#125fd5] shadow-sm' : 'text-slate-600 hover:bg-white'
+            }`}
+          >
             <Settings className="h-4 w-4" />
             Settings
-          </button>
+          </Link>
           <button
             onClick={() => {
               dispatch(logout());
@@ -146,7 +192,7 @@ export default function AppShell({
             <Bell className="h-5 w-5 text-slate-500" />
             <div className="flex items-center gap-2">
               <div className="text-right text-sm">
-                <p className="font-medium leading-none">{user?.fullName || 'Alex Morgan'}</p>
+                <p className="font-medium leading-none">{user?.fullName || 'User'}</p>
                 <p className="text-xs text-slate-500">Pro Member</p>
               </div>
               <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white shadow">
@@ -154,7 +200,7 @@ export default function AppShell({
                   <img src={user.avatar} alt={user.fullName} className="h-full w-full object-cover" />
                 ) : (
                   <span className="text-xs font-semibold text-slate-500">
-                    {user?.fullName?.charAt(0) || 'A'}
+                    {user?.fullName?.charAt(0) || 'U'}
                   </span>
                 )}
               </div>

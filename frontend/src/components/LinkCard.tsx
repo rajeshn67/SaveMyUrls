@@ -21,9 +21,43 @@ interface LinkCardProps {
   onEdit?: (url: URL) => void;
 }
 
+const readCardSettings = () => {
+  if (typeof window === 'undefined') {
+    return {
+      confirmBeforeDelete: true,
+      copyFormat: 'url',
+      dashboardDensity: 'compact',
+      openLinksInNewTab: true,
+      showDescriptions: true,
+    };
+  }
+
+  try {
+    const settings = JSON.parse(localStorage.getItem('savemyurls.settings') || '{}');
+    return {
+      confirmBeforeDelete: settings.confirmBeforeDelete !== false,
+      copyFormat: settings.copyFormat || 'url',
+      dashboardDensity: settings.dashboardDensity || 'compact',
+      openLinksInNewTab: settings.openLinksInNewTab !== false,
+      showDescriptions: settings.showDescriptions !== false,
+    };
+  } catch {
+    return {
+      confirmBeforeDelete: true,
+      copyFormat: 'url',
+      dashboardDensity: 'compact',
+      openLinksInNewTab: true,
+      showDescriptions: true,
+    };
+  }
+};
+
 export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
   const dispatch = useDispatch<AppDispatch>();
   const [isLoading, setIsLoading] = useState(false);
+  const cardSettings = readCardSettings();
+  const openInNewTab = cardSettings.openLinksInNewTab;
+  const isComfortable = cardSettings.dashboardDensity === 'comfortable';
 
   const normalizedUrl = /^https?:\/\//i.test(url.url) ? url.url : `https://${url.url}`;
 
@@ -79,15 +113,24 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this link?')) {
-      try {
-        await urlsAPI.deleteUrl(url._id);
-        dispatch(deleteUrl(url._id));
-        onRefresh?.();
-      } catch (error) {
-        console.error('Failed to delete link:', error);
-      }
+    if (cardSettings.confirmBeforeDelete && !window.confirm('Are you sure you want to delete this link?')) {
+      return;
     }
+
+    try {
+      await urlsAPI.deleteUrl(url._id);
+      dispatch(deleteUrl(url._id));
+      onRefresh?.();
+    } catch (error) {
+      console.error('Failed to delete link:', error);
+    }
+  };
+
+  const handleCopy = () => {
+    const text = cardSettings.copyFormat === 'markdown'
+      ? `[${url.title}](${normalizedUrl})`
+      : normalizedUrl;
+    navigator.clipboard.writeText(text);
   };
 
   const getDisplayDate = () => {
@@ -104,8 +147,8 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
   };
 
   return (
-    <Card className="group w-[180px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-      <div className="relative h-20 overflow-hidden bg-slate-100">
+    <Card className={`group overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg ${isComfortable ? 'w-[220px]' : 'w-[180px]'}`}>
+      <div className={`relative overflow-hidden bg-slate-100 ${isComfortable ? 'h-28' : 'h-20'}`}>
         <img
           src={previewSrc}
           alt={`${siteDomain || 'site'} preview`}
@@ -131,11 +174,16 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
         </div>
       </div>
 
-      <CardContent className="flex h-[140px] flex-col justify-between px-2.5 pb-2 pt-2">
+      <CardContent className={`flex flex-col justify-between px-2.5 pb-2 pt-2 ${isComfortable ? 'h-[170px]' : 'h-[140px]'}`}>
         <div className="space-y-0.5">
           <div className="flex items-start justify-between gap-2">
             <h3 className="min-w-0 line-clamp-1 text-sm font-semibold leading-snug text-slate-900">
-              <a href={url.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-blue-600">
+              <a
+                href={normalizedUrl}
+                target={openInNewTab ? '_blank' : undefined}
+                rel={openInNewTab ? 'noopener noreferrer' : undefined}
+                className="inline-flex items-center gap-2 hover:text-blue-600"
+              >
                 <span className="truncate">{url.title}</span>
                 <Link className="h-3.5 w-3.5 text-slate-400" />
               </a>
@@ -149,15 +197,17 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
               <Star className={`h-4 w-4 ${url.isFavorite ? 'fill-current' : ''}`} />
             </button>
           </div>
-          <div className="min-h-[40px]">
-            {url.description ? (
+          {cardSettings.showDescriptions ? (
+            <div className="min-h-[40px]">
+              {url.description ? (
               <p className="line-clamp-2 text-[11px] leading-5 text-slate-500">
                 {url.description}
               </p>
-            ) : (
+              ) : (
               <p className="text-[11px] leading-5 text-slate-400">No description available</p>
-            )}
-          </div>
+              )}
+            </div>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center gap-1">
@@ -194,13 +244,13 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(url.url)}>
+                <DropdownMenuItem onClick={handleCopy}>
                   <Copy className="mr-2 h-4 w-4" />
-                  Copy Link
+                  {cardSettings.copyFormat === 'markdown' ? 'Copy Markdown' : 'Copy Link'}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.open(url.url, '_blank')}>
+                <DropdownMenuItem onClick={() => openInNewTab ? window.open(normalizedUrl, '_blank') : window.location.assign(normalizedUrl)}>
                   <ExternalLink className="mr-2 h-4 w-4" />
-                  Open in New Tab
+                  {openInNewTab ? 'Open in New Tab' : 'Open Link'}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={togglePin}>
                   <Pin className="mr-2 h-4 w-4" />

@@ -22,9 +22,16 @@ const formatUserResponse = (user) => ({
   fullName: user.fullName,
   email: user.email,
   location: user.location,
+  bio: user.bio,
+  role: user.role,
+  website: user.website,
+  phone: user.phone,
+  timezone: user.timezone,
+  socialHandle: user.socialHandle,
   avatar: user.avatar,
   subscription: user.subscription,
   categories: user.categories,
+  createdAt: user.createdAt,
 });
 
 // Register
@@ -95,13 +102,59 @@ router.get('/me', authenticate, async (req, res) => {
 // Update profile
 router.put('/profile', authenticate, async (req, res) => {
   try {
-    const { fullName, location } = req.body;
+    const { fullName, location, bio, role, website, phone, timezone, socialHandle } = req.body;
     const user = await User.findByIdAndUpdate(
       req.userId,
-      { fullName, location },
+      { fullName, location, bio, role, website, phone, timezone, socialHandle },
       { new: true }
     );
     res.json(formatUserResponse(user));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Change password
+router.post('/change-password', authenticate, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    const user = await User.findById(req.userId).select('+password');
+    if (!user?.password) {
+      return res.status(400).json({ error: 'Password login is not enabled for this account' });
+    }
+
+    const isPasswordValid = await user.comparePassword(currentPassword);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Request password reset
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    await User.findOne({ email });
+    res.json({ message: 'If an account exists, a password reset link will be sent' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

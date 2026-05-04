@@ -5,9 +5,16 @@ interface User {
   fullName: string;
   email: string;
   location?: string;
+  bio?: string;
+  role?: string;
+  website?: string;
+  phone?: string;
+  timezone?: string;
+  socialHandle?: string;
   avatar?: string;
   subscription?: string;
   categories?: Array<{ name: string; description?: string; color?: string }>;
+  createdAt?: string;
 }
 
 interface AuthState {
@@ -17,10 +24,12 @@ interface AuthState {
   error: string | null;
 }
 
+const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
 const initialState: AuthState = {
-  token: typeof window !== 'undefined' ? localStorage.getItem('token') : null,
+  token: storedToken,
   user: null,
-  isLoading: false,
+  isLoading: Boolean(storedToken),
   error: null,
 };
 

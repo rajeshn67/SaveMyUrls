@@ -22,6 +22,31 @@ interface AddLinkModalProps {
 
 const DEFAULT_CATEGORY = 'uncategorized';
 
+const readLinkSettings = () => {
+  if (typeof window === 'undefined') {
+    return {
+      autoFavoriteNewLinks: false,
+      defaultCategory: DEFAULT_CATEGORY,
+      requireDescription: false,
+    };
+  }
+
+  try {
+    const settings = JSON.parse(localStorage.getItem('savemyurls.settings') || '{}');
+    return {
+      autoFavoriteNewLinks: Boolean(settings.autoFavoriteNewLinks),
+      defaultCategory: String(settings.defaultCategory || DEFAULT_CATEGORY).trim().toLowerCase(),
+      requireDescription: Boolean(settings.requireDescription),
+    };
+  } catch {
+    return {
+      autoFavoriteNewLinks: false,
+      defaultCategory: DEFAULT_CATEGORY,
+      requireDescription: false,
+    };
+  }
+};
+
 export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModalProps) {
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -34,16 +59,16 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
   useEffect(() => {
     const fetchCategories = async () => {
       if (!isOpen) return;
+      const settings = readLinkSettings();
       try {
         const response = await urlsAPI.getCategories();
         const backendCategories = (response.data || []).map((item: { name: string }) => item.name);
-        const merged = Array.from(new Set([DEFAULT_CATEGORY, ...backendCategories]));
+        const merged = Array.from(new Set([DEFAULT_CATEGORY, settings.defaultCategory, ...backendCategories]));
         setCategories(merged);
-        if (!merged.includes(category)) {
-          setCategory(DEFAULT_CATEGORY);
-        }
+        setCategory(merged.includes(settings.defaultCategory) ? settings.defaultCategory : DEFAULT_CATEGORY);
       } catch {
-        setCategories([DEFAULT_CATEGORY]);
+        setCategories([DEFAULT_CATEGORY, settings.defaultCategory]);
+        setCategory(settings.defaultCategory || DEFAULT_CATEGORY);
       }
     };
 
@@ -69,6 +94,11 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
       setDescriptionError('Description must be 70 characters or less');
       return;
     }
+    const settings = readLinkSettings();
+    if (settings.requireDescription && charCount === 0) {
+      setDescriptionError('Description is required by your settings');
+      return;
+    }
     
     setIsLoading(true);
 
@@ -79,7 +109,12 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
         description: description.trim(),
         category,
       });
-      onSuccess(response.data);
+      let createdUrl = response.data;
+      if (settings.autoFavoriteNewLinks) {
+        await urlsAPI.toggleFavorite(createdUrl._id);
+        createdUrl = { ...createdUrl, isFavorite: true };
+      }
+      onSuccess(createdUrl);
       resetForm();
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to save link';

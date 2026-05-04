@@ -125,10 +125,15 @@
   #root {
     height: 100%;
   }
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 2rem;
+  }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 }
 
