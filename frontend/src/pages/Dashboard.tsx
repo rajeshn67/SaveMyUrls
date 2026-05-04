@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store/store';
-import { setUrls, setLoading, setError } from '../store/urlsSlice';
+import { addUrl, setUrls, setLoading, setError } from '../store/urlsSlice';
 import { urlsAPI } from '../services/api';
 import AppShell from '../components/AppShell';
 import AddLinkModal from '../components/AddLinkModal';
@@ -47,6 +47,18 @@ export default function Dashboard() {
         .some((value) => String(value).toLowerCase().includes(normalizedSearch));
 
     return matchesCategory && matchesFavorite && matchesSearch;
+  }).sort((a, b) => {
+    // Pinned items first
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    // If both pinned, sort by pinnedAt (most recent first)
+    if (a.isPinned && b.isPinned) {
+      const aTime = a.pinnedAt ? new Date(a.pinnedAt).getTime() : 0;
+      const bTime = b.pinnedAt ? new Date(b.pinnedAt).getTime() : 0;
+      return bTime - aTime;
+    }
+    // If neither pinned, sort by createdAt (most recent first)
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
   return (
@@ -76,7 +88,7 @@ export default function Dashboard() {
       {isLoading ? (
         <p className="text-slate-500">Loading your links...</p>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-3">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
           <button
             onClick={() => setShowAddModal(true)}
             className="group flex min-h-[170px] w-full flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-3 text-center transition hover:border-blue-400 hover:bg-slate-50"
@@ -91,7 +103,6 @@ export default function Dashboard() {
             <LinkCard
               key={url._id}
               url={url}
-              onRefresh={fetchUrls}
               onEdit={(selectedUrl) => {
                 setEditingLink(selectedUrl);
                 setShowEditModal(true);
@@ -104,9 +115,13 @@ export default function Dashboard() {
       <AddLinkModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onSuccess={() => {
+        onSuccess={(createdUrl) => {
           setShowAddModal(false);
-          fetchUrls();
+          if (createdUrl) {
+            dispatch(addUrl(createdUrl));
+          } else {
+            fetchUrls();
+          }
         }}
       />
       <EditLinkModal

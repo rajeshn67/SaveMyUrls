@@ -31,6 +31,7 @@ export default function EditLinkModal({ isOpen, onClose, onSuccess, link }: Edit
   const [categories, setCategories] = useState<string[]>([DEFAULT_CATEGORY]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [descriptionError, setDescriptionError] = useState('');
 
   useEffect(() => {
     if (!isOpen || !link) return;
@@ -39,6 +40,7 @@ export default function EditLinkModal({ isOpen, onClose, onSuccess, link }: Edit
     setDescription(link.description || '');
     setCategory(link.category || DEFAULT_CATEGORY);
     setError('');
+    setDescriptionError('');
   }, [isOpen, link]);
 
   useEffect(() => {
@@ -60,6 +62,19 @@ export default function EditLinkModal({ isOpen, onClose, onSuccess, link }: Edit
     e.preventDefault();
     if (!link) return;
     setError('');
+    setDescriptionError('');
+    
+    const wordCount = description.trim().split(/\s+/).filter(word => word.length > 0).length;
+    const charCount = description.trim().length;
+    if (wordCount > 10) {
+      setDescriptionError('Description must be 10 words or less');
+      return;
+    }
+    if (charCount > 70) {
+      setDescriptionError('Description must be 70 characters or less');
+      return;
+    }
+    
     setIsLoading(true);
     try {
       await urlsAPI.updateUrl(link._id, {
@@ -78,13 +93,13 @@ export default function EditLinkModal({ isOpen, onClose, onSuccess, link }: Edit
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? onClose() : undefined)}>
-      <DialogContent className="sm:max-w-[520px] rounded-3xl border-slate-200 p-7">
+      <DialogContent className="overflow-hidden rounded-3xl border-slate-200 p-7 sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="text-3xl">Edit Link</DialogTitle>
           <DialogDescription>Update your saved resource details.</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="min-w-0 space-y-5">
           <div className="space-y-2">
             <Label htmlFor="edit-title">Resource Title</Label>
             <Input
@@ -113,10 +128,30 @@ export default function EditLinkModal({ isOpen, onClose, onSuccess, link }: Edit
             <Textarea
               id="edit-description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="resize-none"
+              onChange={(e) => {
+                setDescription(e.target.value);
+                const wordCount = e.target.value.trim().split(/\s+/).filter(word => word.length > 0).length;
+                const charCount = e.target.value.trim().length;
+                if (wordCount > 10) {
+                  setDescriptionError('Description must be 10 words or less');
+                } else if (charCount > 70) {
+                  setDescriptionError('Description must be 70 characters or less');
+                } else {
+                  setDescriptionError('');
+                }
+              }}
+              className="max-h-24 resize-none overflow-y-auto break-words"
               rows={3}
             />
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-slate-500">Max 10 words</span>
+              <span className={`text-xs ${description.trim().split(/\s+/).filter(word => word.length > 0).length > 10 ? 'text-red-500' : 'text-slate-500'}`}>
+                {description.trim().split(/\s+/).filter(word => word.length > 0).length}/10 words
+              </span>
+            </div>
+            {descriptionError && (
+              <p className="text-sm text-red-500">{descriptionError}</p>
+            )}
           </div>
 
           <div className="space-y-2">

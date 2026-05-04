@@ -8,6 +8,8 @@ export interface URL {
   category: string;
   tags?: string[];
   isFavorite: boolean;
+  isPinned: boolean;
+  pinnedAt?: string;
   thumbnail?: string;
   domain: string;
   createdAt: string;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '../components/ui/button';
 import AuthModal from '../components/AuthModal';
-import { ArrowRight, Link2, Sparkles, RefreshCcw, Search, Share2 } from 'lucide-react';
+import { ArrowRight, Link2, Sparkles, RefreshCcw, Search, Share2, Bookmark } from 'lucide-react';
 
 const featureCards = [
   {
@@ -32,7 +32,17 @@ export default function Landing() {
     <div className="min-h-screen bg-[#f5f6fb] text-slate-900">
       <header className="mx-auto flex h-[74px] w-full max-w-[1280px] items-center justify-between border-b border-slate-200/70 px-5">
         <div className="flex items-center gap-10">
-          <p className="text-[30px] font-extrabold tracking-tight text-[#0f64d8]">SaveMyURLs</p>
+          <div className="flex items-center gap-2.5">
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#156fe6] to-[#0f5cc2] text-white shadow-lg shadow-blue-500/30">
+              <Bookmark className="h-5 w-5" strokeWidth={2.5} />
+              <div className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-lg bg-white shadow-md">
+                <Link2 className="h-2.5 w-2.5 text-[#156fe6]" strokeWidth={2.5} />
+              </div>
+            </div>
+            <p className="text-[26px] font-bold tracking-tight text-[#0f5cc2]">
+              <span className="text-[#156fe6]">Save</span>My<span className="text-[#156fe6]">URLs</span>
+            </p>
+          </div>
           <nav className="flex items-center gap-7 text-[14px] text-slate-500">
             <button className="font-semibold text-slate-900">Features</button>
             <button className="hover:text-slate-800">Pricing</button>
@@ -169,9 +179,17 @@ export default function Landing() {
       </section>
 
       <footer className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-5 pb-8 text-sm text-slate-400">
-        <div>
-          <p className="font-semibold text-slate-700">SaveMyURLs</p>
-          <p className="text-xs">© 2024 SaveMyURLs. All rights reserved.</p>
+        <div className="flex items-center gap-3">
+          <div className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#156fe6] to-[#0f5cc2] text-white shadow-md shadow-blue-500/20">
+            <Bookmark className="h-4 w-4" strokeWidth={2.5} />
+            <div className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-md bg-white shadow-sm">
+              <Link2 className="h-2 w-2 text-[#156fe6]" strokeWidth={2.5} />
+            </div>
+          </div>
+          <div>
+            <p className="font-semibold text-slate-700">SaveMyURLs</p>
+            <p className="text-xs">© 2024 SaveMyURLs. All rights reserved.</p>
+          </div>
         </div>
         <div className="flex items-center gap-7">
           <button>Privacy Policy</button>

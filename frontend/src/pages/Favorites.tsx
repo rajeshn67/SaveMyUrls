@@ -45,12 +45,11 @@ export default function Favorites() {
       {isLoading ? (
         <p className="text-slate-500">Loading...</p>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-3">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
           {favorites.map((url) => (
             <LinkCard
               key={url._id}
               url={url}
-              onRefresh={fetchUrls}
               onEdit={(selectedUrl) => {
                 setEditingLink(selectedUrl);
                 setShowEditModal(true);

@@ -67,7 +67,7 @@ router.get('/', authenticate, async (req, res) => {
       ];
     }
 
-    const urls = await URL.find(query).sort({ createdAt: -1 });
+    const urls = await URL.find(query).sort({ isPinned: -1, pinnedAt: -1, createdAt: -1 });
 
     const enrichedUrls = await Promise.all(
       urls.map(async (item) => {
@@ -321,6 +321,28 @@ router.patch('/:id/favorite', authenticate, async (req, res) => {
     }
 
     url.isFavorite = !url.isFavorite;
+    await url.save();
+
+    res.json(url);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Toggle pin
+router.patch('/:id/pin', authenticate, async (req, res) => {
+  try {
+    const url = await URL.findOne({
+      _id: req.params.id,
+      userId: req.userId,
+    });
+
+    if (!url) {
+      return res.status(404).json({ error: 'URL not found' });
+    }
+
+    url.isPinned = !url.isPinned;
+    url.pinnedAt = url.isPinned ? new Date() : null;
     await url.save();
 
     res.json(url);

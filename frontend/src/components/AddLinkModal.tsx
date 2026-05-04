@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { urlsAPI } from '../services/api';
+import type { URL } from '../store/urlsSlice';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -16,7 +17,7 @@ import {
 interface AddLinkModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (createdUrl?: URL) => void;
 }
 
 const DEFAULT_CATEGORY = 'uncategorized';
@@ -51,20 +52,34 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [descriptionError, setDescriptionError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setDescriptionError('');
+    
+    const wordCount = description.trim().split(/\s+/).filter(word => word.length > 0).length;
+    const charCount = description.trim().length;
+    if (wordCount > 10) {
+      setDescriptionError('Description must be 10 words or less');
+      return;
+    }
+    if (charCount > 70) {
+      setDescriptionError('Description must be 70 characters or less');
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
-      await urlsAPI.createUrl({
+      const response = await urlsAPI.createUrl({
         title: title.trim(),
         url: url.trim(),
         description: description.trim(),
         category,
       });
-      onSuccess();
+      onSuccess(response.data);
       resetForm();
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to save link';
@@ -81,11 +96,13 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
     setCategory(DEFAULT_CATEGORY);
     setNewCategoryName('');
     setCategoryError('');
+    setDescriptionError('');
   };
 
   const handleClose = () => {
     resetForm();
     setError('');
+    setDescriptionError('');
     onClose();
   };
 
@@ -112,7 +129,7 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? handleClose() : undefined)}>
-      <DialogContent className="sm:max-w-[520px] rounded-3xl border-slate-200 p-7">
+      <DialogContent className="overflow-hidden rounded-3xl border-slate-200 p-7 sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="text-3xl">Add New Link</DialogTitle>
           <DialogDescription>
@@ -120,7 +137,7 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="min-w-0 space-y-5">
           <div className="space-y-2">
             <Label htmlFor="title">Resource Title</Label>
             <Input
@@ -152,10 +169,30 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
               id="description"
               placeholder="Optional: Add notes about this resource..."
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="resize-none"
+              onChange={(e) => {
+                setDescription(e.target.value);
+                const wordCount = e.target.value.trim().split(/\s+/).filter(word => word.length > 0).length;
+                const charCount = e.target.value.trim().length;
+                if (wordCount > 10) {
+                  setDescriptionError('Description must be 10 words or less');
+                } else if (charCount > 70) {
+                  setDescriptionError('Description must be 70 characters or less');
+                } else {
+                  setDescriptionError('');
+                }
+              }}
+              className="max-h-24 resize-none overflow-y-auto break-words"
               rows={3}
             />
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-slate-500">Max 10 words</span>
+              <span className={`text-xs ${description.trim().split(/\s+/).filter(word => word.length > 0).length > 10 ? 'text-red-500' : 'text-slate-500'}`}>
+                {description.trim().split(/\s+/).filter(word => word.length > 0).length}/10 words
+              </span>
+            </div>
+            {descriptionError && (
+              <p className="text-sm text-red-500">{descriptionError}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -174,17 +211,17 @@ export default function AddLinkModal({ isOpen, onClose, onSuccess }: AddLinkModa
             </Select>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="mb-2 flex items-center justify-between gap-2">
               <p className="text-sm font-semibold text-slate-900">Add a new category</p>
               <span className="text-xs text-slate-500">Optional</span>
             </div>
-            <div className="flex gap-2">
+            <div className="flex min-w-0 gap-2">
               <Input
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 placeholder="New category"
-                className="h-11 border-slate-300"
+                className="h-11 min-w-0 border-slate-300"
               />
               <Button
                 type="button"

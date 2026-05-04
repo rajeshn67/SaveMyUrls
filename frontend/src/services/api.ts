@@ -31,6 +31,10 @@ export const authAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post('/auth/change-password', { currentPassword, newPassword }),
+  forgotPassword: (email: string) =>
+    api.post('/auth/forgot-password', { email }),
 };
 
 // URLs API
@@ -60,6 +64,9 @@ export const urlsAPI = {
   
   toggleFavorite: (id: string) =>
     api.patch(`/urls/${id}/favorite`),
+
+  togglePin: (id: string) =>
+    api.patch(`/urls/${id}/pin`),
 };
 
 export default api;

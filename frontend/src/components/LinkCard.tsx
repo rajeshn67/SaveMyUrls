@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../store/store';
+import { updateUrl, deleteUrl } from '../store/urlsSlice';
 import { urlsAPI } from '../services/api';
 import type { URL } from '../store/urlsSlice';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Pencil, Trash2, Star } from 'lucide-react';
+import { Pencil, Trash2, Star, Link, Pin, Copy, ExternalLink } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,12 +17,12 @@ import {
 
 interface LinkCardProps {
   url: URL;
-  onRefresh: () => void;
+  onRefresh?: () => void;
   onEdit?: (url: URL) => void;
 }
 
 export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
-  const [isFavorite, setIsFavorite] = useState(url.isFavorite);
+  const dispatch = useDispatch<AppDispatch>();
   const [isLoading, setIsLoading] = useState(false);
 
   const normalizedUrl = /^https?:\/\//i.test(url.url) ? url.url : `https://${url.url}`;
@@ -38,10 +41,22 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
     setIsLoading(true);
     try {
       await urlsAPI.toggleFavorite(url._id);
-      setIsFavorite(!isFavorite);
-      onRefresh();
+      dispatch(updateUrl({ ...url, isFavorite: !url.isFavorite }));
+      onRefresh?.();
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const togglePin = async () => {
+    setIsLoading(true);
+    try {
+      await urlsAPI.togglePin(url._id);
+      dispatch(updateUrl({ ...url, isPinned: !url.isPinned, pinnedAt: !url.isPinned ? new Date().toISOString() : undefined }));
+    } catch (error) {
+      console.error('Failed to toggle pin:', error);
     } finally {
       setIsLoading(false);
     }
@@ -51,7 +66,8 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
     if (window.confirm('Are you sure you want to delete this link?')) {
       try {
         await urlsAPI.deleteUrl(url._id);
-        onRefresh();
+        dispatch(deleteUrl(url._id));
+        onRefresh?.();
       } catch (error) {
         console.error('Failed to delete link:', error);
       }
@@ -72,8 +88,8 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
   };
 
   return (
-    <Card className="group w-[190px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-      <div className="relative h-22 overflow-hidden bg-slate-100">
+    <Card className="group w-[180px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg">
+      <div className="relative h-20 overflow-hidden bg-slate-100">
         <img
           src={previewSrc}
           alt={`${siteDomain || 'site'} preview`}
@@ -87,14 +103,6 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
 
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/30 via-transparent to-transparent" />
 
-        <button
-          onClick={toggleFavorite}
-          disabled={isLoading}
-          className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[#f3bf42] shadow-sm transition hover:bg-white"
-        >
-          <Star className={`h-3.5 w-3.5 ${isFavorite ? 'fill-current' : ''}`} />
-        </button>
-
         <div className="absolute left-2.5 bottom-2.5 flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 shadow-sm">
           <img
             src={faviconUrl}
@@ -107,33 +115,52 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
         </div>
       </div>
 
-      <CardContent className="space-y-1.5 px-3 pb-2.5 pt-2.5">
+      <CardContent className="flex h-[140px] flex-col justify-between px-2.5 pb-2 pt-2">
         <div className="space-y-0.5">
-          <h3 className="line-clamp-1 text-xs font-semibold leading-tight text-slate-900">
-            <a href={url.url} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600">
-              {url.title}
-            </a>
-          </h3>
-          {url.description ? (
-            <p className="line-clamp-1 text-[10px] leading-4 text-slate-500">
-              {url.description}
-            </p>
-          ) : (
-            <p className="text-[10px] leading-4 text-slate-400">No description available</p>
-          )}
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="min-w-0 line-clamp-1 text-sm font-semibold leading-snug text-slate-900">
+              <a href={url.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-blue-600">
+                <span className="truncate">{url.title}</span>
+                <Link className="h-3.5 w-3.5 text-slate-400" />
+              </a>
+            </h3>
+            <button
+              type="button"
+              onClick={toggleFavorite}
+              disabled={isLoading}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#f3bf42] shadow-sm transition hover:bg-slate-50"
+            >
+              <Star className={`h-4 w-4 ${url.isFavorite ? 'fill-current' : ''}`} />
+            </button>
+          </div>
+          <div className="min-h-[40px]">
+            {url.description ? (
+              <p className="line-clamp-2 text-[11px] leading-5 text-slate-500">
+                {url.description}
+              </p>
+            ) : (
+              <p className="text-[11px] leading-5 text-slate-400">No description available</p>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-1">
-          <Badge variant="secondary" className="rounded-full bg-[#edf3ff] px-1.5 py-0.5 text-[9px] font-semibold text-[#156fe6]">
+          <Badge variant="secondary" className="rounded-full bg-[#edf3ff] px-2 py-0.5 text-[10px] font-semibold text-[#156fe6]">
             {url.category || 'Uncategorized'}
           </Badge>
-          <span className="text-[9px] text-slate-500">{getDisplayDate()}</span>
+          {url.isPinned && (
+            <Badge variant="secondary" className="rounded-full bg-amber-100 px-1.5 py-0.5 text-amber-700">
+              <Pin className="h-3 w-3" />
+            </Badge>
+          )}
+          <span className="text-[10px] text-slate-500">{getDisplayDate()}</span>
         </div>
 
-        <div className="flex items-center justify-between gap-1 border-t border-slate-100 pt-1.5">
-          <div className="text-[9px] text-slate-500">{url.tags?.length ? `${url.tags.length} tags` : 'No tags'}</div>
+        <div className="flex items-center justify-between gap-1 border-t border-slate-100 pt-1">
+          <div className="text-[10px] text-slate-500">{url.tags?.length ? `${url.tags.length} tags` : 'No tags'}</div>
           <div className="flex items-center gap-1">
             <Button
+              type="button"
               variant="ghost"
               size="icon"
               className="h-6 w-6 rounded-xl text-slate-500 hover:bg-slate-100"
@@ -141,24 +168,31 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
             >
               <Pencil className="h-3 w-3" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleDelete} className="h-6 w-6 rounded-xl text-slate-500 hover:bg-slate-100">
+            <Button type="button" variant="ghost" size="icon" onClick={handleDelete} className="h-6 w-6 rounded-xl text-slate-500 hover:bg-slate-100">
               <Trash2 className="h-3 w-3" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-xl text-slate-500 hover:bg-slate-100">
+                <Button type="button" variant="ghost" size="icon" className="h-6 w-6 rounded-xl text-slate-500 hover:bg-slate-100">
                   ⋯
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => navigator.clipboard.writeText(url.url)}>
+                  <Copy className="mr-2 h-4 w-4" />
                   Copy Link
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => window.open(url.url, '_blank')}>
+                  <ExternalLink className="mr-2 h-4 w-4" />
                   Open in New Tab
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={togglePin}>
+                  <Pin className="mr-2 h-4 w-4" />
+                  {url.isPinned ? 'Unpin from Top' : 'Pin to Top'}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={toggleFavorite} className="text-red-600">
-                  {isFavorite ? 'Remove Favorite' : 'Mark Favorite'}
+                  <Star className="mr-2 h-4 w-4" />
+                  {url.isFavorite ? 'Remove Favorite' : 'Mark Favorite'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

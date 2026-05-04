@@ -27,6 +27,13 @@ const urlSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
+    pinnedAt: {
+      type: Date,
+    },
     thumbnail: {
       type: String,
     },
