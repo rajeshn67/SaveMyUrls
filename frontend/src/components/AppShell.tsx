@@ -106,9 +106,9 @@ export default function AppShell({
   }, [inputValue, user?.email]);
 
   return (
-    <div className="h-screen overflow-hidden bg-[#f6f7fc] text-slate-900">
-      <aside className="fixed left-0 top-0 flex h-screen w-[220px] flex-col border-r border-slate-200 bg-[#f5f6fb] px-4 py-5">
-        <div className="mb-8 flex items-center gap-3">
+    <div className="min-h-screen overflow-x-hidden bg-[#f6f7fc] text-slate-900 lg:h-screen lg:overflow-hidden">
+      <aside className="relative z-20 flex w-full flex-col border-b border-slate-200 bg-[#f5f6fb] px-4 py-4 lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-[220px] lg:border-b-0 lg:border-r lg:px-4 lg:py-5">
+        <div className="mb-4 flex items-center gap-3 lg:mb-8">
           <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#156fe6] to-[#0f5cc2] text-white shadow-lg shadow-blue-500/30">
             <Bookmark className="h-6 w-6" strokeWidth={2.5} />
             <div className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-lg bg-white shadow-md">
@@ -123,7 +123,7 @@ export default function AppShell({
           </div>
         </div>
 
-        <nav className="space-y-1">
+        <nav className="no-scrollbar flex gap-2 overflow-x-auto pb-1 lg:block lg:space-y-1 lg:overflow-visible lg:pb-0">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = location.pathname === item.to;
@@ -131,7 +131,7 @@ export default function AppShell({
               <Link
                 key={item.to}
                 to={item.to}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+                className={`flex flex-shrink-0 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition lg:w-full lg:gap-3 ${
                   active ? 'bg-white text-[#125fd5] shadow-sm' : 'text-slate-600 hover:bg-white'
                 }`}
               >
@@ -145,18 +145,18 @@ export default function AppShell({
         {onAddLink ? (
           <Button
             onClick={onAddLink}
-            className="mt-auto mb-6 h-12 rounded-xl bg-[#156fe6] text-base hover:bg-[#1062cd]"
+            className="mt-4 h-11 rounded-xl bg-[#156fe6] text-sm hover:bg-[#1062cd] lg:mt-auto lg:mb-6 lg:h-12 lg:text-base"
           >
             + Add New Link
           </Button>
         ) : (
-          <div className="mt-auto mb-6" />
+          <div className="hidden lg:mt-auto lg:mb-6 lg:block" />
         )}
 
-        <div className="space-y-1 text-sm">
+        <div className="mt-3 flex gap-2 text-sm lg:mt-0 lg:block lg:space-y-1">
           <Link
             to="/settings"
-            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition ${
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 transition lg:w-full lg:justify-start lg:gap-3 ${
               location.pathname === '/settings' ? 'bg-white text-[#125fd5] shadow-sm' : 'text-slate-600 hover:bg-white'
             }`}
           >
@@ -170,7 +170,7 @@ export default function AppShell({
               dispatch(lockVault());
               navigate('/');
             }}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-slate-600 hover:bg-white"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-slate-600 hover:bg-white lg:w-full lg:justify-start lg:gap-3"
           >
             <LogOut className="h-4 w-4" />
             Logout
@@ -178,16 +178,16 @@ export default function AppShell({
         </div>
       </aside>
 
-      <main className="ml-[220px] h-screen overflow-hidden">
-        <header className="sticky top-0 z-10 flex h-20 items-center justify-between gap-5 border-b border-slate-200 bg-[#f6f7fc]/95 px-7 backdrop-blur">
+      <main className="min-h-screen overflow-visible lg:ml-[220px] lg:h-screen lg:overflow-hidden">
+        <header className="sticky top-0 z-10 flex flex-col gap-3 border-b border-slate-200 bg-[#f6f7fc]/95 px-4 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-5 lg:h-20 lg:px-7 lg:py-0">
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-2xl font-semibold leading-tight tracking-tight text-slate-900">{title}</h1>
+            <h1 className="truncate text-xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-2xl">{title}</h1>
             {subtitle ? <p className="mt-0.5 truncate text-sm text-slate-500">{subtitle}</p> : null}
           </div>
 
-          <div className="ml-auto flex min-w-0 items-center gap-5">
+          <div className="flex w-full min-w-0 items-center gap-3 sm:ml-auto sm:w-auto sm:gap-5">
             {showSearch ? (
-              <div className="flex w-[360px] max-w-[34vw] items-center gap-2 rounded-xl border border-slate-200 bg-white px-3">
+              <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 sm:w-[320px] sm:flex-none lg:w-[360px] lg:max-w-[34vw]">
                 <Search className="h-4 w-4 flex-shrink-0 text-slate-400" />
                 <input
                   id={searchInputId}
@@ -205,9 +205,9 @@ export default function AppShell({
                 />
               </div>
             ) : null}
-            <Bell className="h-5 w-5 text-slate-500" />
-            <div className="flex items-center gap-2">
-              <div className="text-right text-sm">
+            <Bell className="hidden h-5 w-5 flex-shrink-0 text-slate-500 sm:block" />
+            <div className="flex flex-shrink-0 items-center gap-2">
+              <div className="hidden text-right text-sm sm:block">
                 <p className="font-medium leading-none">{user?.fullName || 'User'}</p>
                 <p className="text-xs text-slate-500">Pro Member</p>
               </div>
@@ -224,7 +224,7 @@ export default function AppShell({
           </div>
         </header>
 
-        <div className="no-scrollbar h-[calc(100vh-80px)] overflow-y-auto px-7 py-7">
+        <div className="no-scrollbar px-4 py-4 lg:h-[calc(100vh-80px)] lg:overflow-y-auto lg:px-7 lg:py-7">
           {children}
         </div>
       </main>
