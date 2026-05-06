@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SaveMyURLs</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup-shell">
+      <header class="brand">
+        <div class="brand-mark">S</div>
+        <div>
+          <h1>SaveMyURLs</h1>
+          <p id="sessionLabel">Chrome quick save</p>
+        </div>
+      </header>
+
+      <section id="status" class="status" role="status" aria-live="polite" hidden></section>
+
+      <section id="loginView" class="card" hidden>
+        <form id="loginForm" class="stack">
+          <label>
+            Email
+            <input id="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+          </label>
+          <label>
+            Password
+            <input id="password" type="password" autocomplete="current-password" placeholder="Your password" required />
+          </label>
+          <button id="loginButton" type="submit">Log in</button>
+        </form>
+      </section>
+
+      <section id="saveView" class="stack" hidden>
+        <article class="tab-card">
+          <p class="eyebrow">Current tab</p>
+          <h2 id="tabTitle">Loading tab...</h2>
+          <p id="tabUrl" class="url">Fetching URL</p>
+        </article>
+
+        <form id="saveForm" class="card stack">
+          <label>
+            Category
+            <input id="category" type="text" placeholder="uncategorized" list="categorySuggestions" />
+            <datalist id="categorySuggestions">
+              <option value="Study"></option>
+              <option value="Work"></option>
+              <option value="Shopping"></option>
+              <option value="Videos"></option>
+              <option value="Social"></option>
+            </datalist>
+          </label>
+
+          <div class="suggestions" aria-label="Category suggestions">
+            <button type="button" data-category="Study">Study</button>
+            <button type="button" data-category="Work">Work</button>
+            <button type="button" data-category="Shopping">Shopping</button>
+            <button type="button" data-category="Videos">Videos</button>
+            <button type="button" data-category="Social">Social</button>
+          </div>
+
+          <label>
+            Tags
+            <input id="tags" type="text" placeholder="react, docs, ideas" />
+          </label>
+
+          <label class="toggle-row">
+            <input id="privateVault" type="checkbox" />
+            <span>Save to Private Vault 🔒</span>
+          </label>
+
+          <label id="vaultPasswordWrap" hidden>
+            Vault password
+            <input id="vaultPassword" type="password" autocomplete="current-password" placeholder="Required for private vault" />
+          </label>
+
+          <button id="saveButton" type="submit">Save URL</button>
+        </form>
+
+        <button id="logoutButton" class="ghost-button" type="button">Log out</button>
+      </section>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

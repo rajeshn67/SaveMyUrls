@@ -1,0 +1,250 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --blue: #1d9bf0;
+  --blue-dark: #0875c9;
+  --blue-soft: #e7f4ff;
+  --text: #102033;
+  --muted: #637489;
+  --line: #d7e8f8;
+  --danger: #b42318;
+  --success: #087443;
+  --warning: #8a5a00;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 360px;
+  min-height: 420px;
+  margin: 0;
+  background: linear-gradient(180deg, #f5fbff 0%, #ffffff 54%);
+  color: var(--text);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.popup-shell {
+  padding: 18px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.brand-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--blue);
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgba(29, 155, 240, 0.24);
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.brand p,
+.eyebrow,
+.url {
+  color: var(--muted);
+}
+
+.brand p {
+  margin-top: 2px;
+  font-size: 12px;
+}
+
+.stack {
+  display: grid;
+  gap: 12px;
+}
+
+.card,
+.tab-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 28px rgba(16, 32, 51, 0.08);
+}
+
+.card {
+  padding: 14px;
+}
+
+.tab-card {
+  padding: 14px;
+}
+
+.eyebrow {
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h2 {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-bottom: 6px;
+  font-size: 15px;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.url {
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  color: #26384d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  outline: none;
+  padding: 10px 11px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.14);
+}
+
+button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--blue);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+  transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+button:hover {
+  background: var(--blue-dark);
+  box-shadow: 0 10px 18px rgba(29, 155, 240, 0.18);
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.64;
+  transform: none;
+  box-shadow: none;
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.suggestions button,
+.ghost-button {
+  min-height: 30px;
+  border: 1px solid var(--line);
+  background: var(--blue-soft);
+  color: var(--blue-dark);
+  box-shadow: none;
+  font-size: 12px;
+}
+
+.suggestions button {
+  padding: 0 10px;
+  border-radius: 999px;
+}
+
+.ghost-button {
+  width: 100%;
+  border-radius: 10px;
+}
+
+.suggestions button:hover,
+.ghost-button:hover {
+  background: #d8eeff;
+  box-shadow: none;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 11px;
+  background: #f8fcff;
+}
+
+.toggle-row input {
+  width: 18px;
+  min-height: 18px;
+  accent-color: var(--blue);
+}
+
+.toggle-row span {
+  flex: 1;
+}
+
+.status {
+  margin-bottom: 12px;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--blue-soft);
+  color: var(--blue-dark);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.status.success {
+  background: #e8f8ef;
+  color: var(--success);
+}
+
+.status.error {
+  background: #fff0ef;
+  color: var(--danger);
+}
+
+.status.warning {
+  background: #fff7df;
+  color: var(--warning);
+}

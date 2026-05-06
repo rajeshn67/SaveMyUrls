@@ -76,7 +76,7 @@ router.post('/', authenticate, async (req, res) => {
 // Create secret URL
 router.post('/secret', authenticate, async (req, res) => {
   try {
-    const { title, url, category, password } = req.body;
+    const { title, url, category, password, tags } = req.body;
     const trimmedPassword = (password || '').trim();
 
     if (!trimmedPassword) {
@@ -98,6 +98,7 @@ router.post('/secret', authenticate, async (req, res) => {
       title,
       url: preview.normalizedUrl || url,
       category: normalizedCategory,
+      tags: tags || [],
       isSecret: true,
       secretPassword,
       thumbnail: preview.thumbnail || undefined,
