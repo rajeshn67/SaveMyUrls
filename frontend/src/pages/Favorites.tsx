@@ -66,7 +66,7 @@ export default function Favorites() {
     if (!normalizedSearch) return favorites;
 
     return favorites.filter((item) =>
-      [item.title, item.description, item.domain, item.url, item.category, ...(item.tags || [])]
+      [item.title, item.description, item.domain, item.url, item.category]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(normalizedSearch))
     );

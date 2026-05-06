@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
-  Tags,
   Users,
   Workflow,
   Zap,
@@ -48,7 +47,7 @@ const features = [
 const seoBenefits = [
   'JWT protected account access',
   'Private links hidden from the normal dashboard',
-  'Fast search across title, URL, domain, tag, and category',
+  'Fast search across title, URL, domain, and category',
   'Favorites, pinned links, categories, and vault storage',
 ];
 
@@ -70,7 +69,7 @@ const proofStats = [
 const steps = [
   {
     title: 'Save the link',
-    description: 'Add a URL with a title, category, tags, and optional notes so context is not lost.',
+    description: 'Add a URL with a title, category, and optional notes so context is not lost.',
     icon: Zap,
   },
   {
@@ -122,7 +121,7 @@ const testimonials = [
 ];
 
 const comparisonRows = [
-  ['Search by title, domain, tag, and category', true, false],
+  ['Search by title, domain, and category', true, false],
   ['Private password-protected vault', true, false],
   ['Category analytics and domain insights', true, false],
   ['Favorites, pinned links, and focused dashboard', true, true],
@@ -265,7 +264,7 @@ export default function Landing() {
                   </div>
                   <div className="flex w-[230px] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
                     <Search className="h-3.5 w-3.5" />
-                    Search by title, domain, tag...
+                    Search by title or domain...
                   </div>
                 </div>
 
@@ -517,11 +516,11 @@ export default function Landing() {
               <Search className="mt-1 h-5 w-5 text-[#156fe6]" />
               <div>
                 <h3 className="font-semibold text-slate-950">Search faster</h3>
-                <p className="mt-1 text-sm leading-6 text-slate-600">Find links by title, URL, domain, tag, category, or description.</p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">Find links by title, URL, domain, category, or description.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Tags className="mt-1 h-5 w-5 text-[#156fe6]" />
+              <Folder className="mt-1 h-5 w-5 text-[#156fe6]" />
               <div>
                 <h3 className="font-semibold text-slate-950">Organize clearly</h3>
                 <p className="mt-1 text-sm leading-6 text-slate-600">Use categories, favorites, and pinned links to keep important resources close.</p>

@@ -185,7 +185,7 @@ export default function Categories() {
     const normalizedSearch = searchTerm.trim().toLowerCase();
     if (!normalizedSearch) return categoryLinks;
     return categoryLinks.filter((item) =>
-      [item.title, item.description, item.domain, item.url, ...(item.tags || [])]
+      [item.title, item.description, item.domain, item.url]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(normalizedSearch))
     );

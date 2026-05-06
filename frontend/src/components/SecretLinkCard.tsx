@@ -5,13 +5,19 @@ import { deleteVaultLink } from '../store/vaultSlice';
 import { addUrl } from '../store/urlsSlice';
 import { urlsAPI } from '../services/api';
 import type { URL } from '../store/urlsSlice';
-import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Copy, Eye, EyeOff, ExternalLink, Lock, LogOut, Trash2 } from 'lucide-react';
+import { Copy, Eye, EyeOff, ExternalLink, Folder, Lock, LogOut, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Badge } from './ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 
 interface SecretLinkCardProps {
   url: URL;
@@ -57,6 +63,7 @@ export default function SecretLinkCard({ url }: SecretLinkCardProps) {
 
   const faviconUrl = `https://www.google.com/s2/favicons?sz=128&domain=${encodeURIComponent(siteDomain || url.url)}`;
   const previewSrc = url.thumbnail || faviconUrl;
+  const categoryLabel = url.category || 'Uncategorized';
 
   const handleDelete = async () => {
     if (displaySettings.confirmBeforeDelete && !window.confirm('Delete this private link?')) return;
@@ -139,20 +146,8 @@ export default function SecretLinkCard({ url }: SecretLinkCardProps) {
 
         <CardContent className="flex min-h-[154px] flex-col justify-between p-3">
           <div className="space-y-2">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="line-clamp-1 text-base font-semibold text-slate-900">{url.title}</h3>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={handleDelete}
-                disabled={isDeleting || isMovingOut}
-                className="h-8 w-8 rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+            <div className="min-w-0">
+              <h3 className="line-clamp-1 text-base font-semibold text-slate-900">{url.title}</h3>
             </div>
 
             <p className="line-clamp-2 break-all text-xs leading-5 text-slate-500">
@@ -161,8 +156,9 @@ export default function SecretLinkCard({ url }: SecretLinkCardProps) {
           </div>
 
           <div className="space-y-2">
-            <Badge variant="secondary" className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-              {url.category || 'Uncategorized'}
+            <Badge variant="secondary" className="max-w-full rounded-full bg-[#edf3ff] px-2.5 py-1 text-[11px] font-semibold text-[#156fe6]">
+              <Folder className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{categoryLabel}</span>
             </Badge>
 
             <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
@@ -176,37 +172,31 @@ export default function SecretLinkCard({ url }: SecretLinkCardProps) {
                 {isVisible ? <EyeOff className="mr-1.5 h-3.5 w-3.5" /> : <Eye className="mr-1.5 h-3.5 w-3.5" />}
                 {isVisible ? 'Hide' : 'Show'}
               </Button>
-              <div className="flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={openMoveOutDialog}
-                  disabled={isMovingOut}
-                  className="h-8 w-8 rounded-xl text-slate-500 hover:bg-blue-50 hover:text-[#156fe6]"
-                  aria-label="Move out of private vault"
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleCopy}
-                  className="h-8 w-8 rounded-xl text-slate-500 hover:bg-slate-100"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => displaySettings.openLinksInNewTab ? window.open(normalizedUrl, '_blank') : window.location.assign(normalizedUrl)}
-                  className="h-8 w-8 rounded-xl text-slate-500 hover:bg-slate-100"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </Button>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-slate-500 hover:bg-slate-100" aria-label="More actions">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="start" sideOffset={8}>
+                  <DropdownMenuItem onClick={handleCopy}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    {displaySettings.copyFormat === 'markdown' ? 'Copy Markdown' : 'Copy Link'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => displaySettings.openLinksInNewTab ? window.open(normalizedUrl, '_blank') : window.location.assign(normalizedUrl)}>
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    {displaySettings.openLinksInNewTab ? 'Open in New Tab' : 'Open Link'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={openMoveOutDialog} disabled={isMovingOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Move Out of Vault
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDelete} disabled={isDeleting || isMovingOut} className="text-red-600">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Link
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </CardContent>

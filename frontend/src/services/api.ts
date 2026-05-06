@@ -53,7 +53,6 @@ export const urlsAPI = {
     url: string;
     description?: string;
     category?: string;
-    tags?: string[];
   }) => api.post('/urls', data),
   
   getUrls: (params?: { category?: string; search?: string; isFavorite?: boolean }) =>

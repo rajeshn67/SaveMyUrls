@@ -6,7 +6,6 @@ export interface URL {
   url: string;
   description?: string;
   category: string;
-  tags?: string[];
   isFavorite: boolean;
   isPinned: boolean;
   isSecret?: boolean;

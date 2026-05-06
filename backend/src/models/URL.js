@@ -22,7 +22,6 @@ const urlSchema = new mongoose.Schema(
       type: String,
       default: 'uncategorized',
     },
-    tags: [String],
     isFavorite: {
       type: Boolean,
       default: false,

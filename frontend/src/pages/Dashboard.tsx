@@ -69,7 +69,7 @@ export default function Dashboard() {
     const normalizedSearch = searchTerm.trim().toLowerCase();
     const matchesSearch =
       !normalizedSearch ||
-      [url.title, url.description, url.domain, url.url, ...(url.tags || []), url.category]
+      [url.title, url.description, url.domain, url.url, url.category]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(normalizedSearch));
 
@@ -102,7 +102,7 @@ export default function Dashboard() {
       onAddLink={() => setShowAddModal(true)}
       searchValue={searchTerm}
       onSearchChange={setSearchTerm}
-      searchPlaceholder="Search by title, domain, tag..."
+      searchPlaceholder="Search by title or domain..."
     >
       <div className="mb-5 grid gap-3 md:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">

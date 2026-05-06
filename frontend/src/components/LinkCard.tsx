@@ -7,7 +7,7 @@ import type { URL } from '../store/urlsSlice';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { CalendarDays, Pencil, Trash2, Star, Link, Pin, Copy, ExternalLink, Lock, MoreHorizontal, Tag } from 'lucide-react';
+import { CalendarDays, Pencil, Trash2, Star, Link, Pin, Copy, ExternalLink, Lock, MoreHorizontal, Folder } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -77,6 +77,7 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
   const faviconUrl = `https://www.google.com/s2/favicons?sz=128&domain=${encodeURIComponent(siteDomain || url.url)}`;
   const previewSrc = url.thumbnail || faviconUrl;
   const descriptionText = url.description?.trim() || `Saved from ${siteDomain || url.domain || 'this website'}. Add a description to make this resource easier to find later.`;
+  const categoryLabel = url.category || 'Uncategorized';
 
   const toggleFavorite = async () => {
     setIsLoading(true);
@@ -230,9 +231,9 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
           ) : null}
 
           <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="secondary" className="rounded-full bg-[#edf3ff] px-2.5 py-1 text-[11px] font-semibold text-[#156fe6]">
-              <Tag className="h-3 w-3" />
-              {url.category || 'Uncategorized'}
+            <Badge variant="secondary" className="max-w-full rounded-full bg-[#edf3ff] px-2.5 py-1 text-[11px] font-semibold text-[#156fe6]">
+              <Folder className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{categoryLabel}</span>
             </Badge>
             {url.isPinned ? (
               <Badge variant="secondary" className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
@@ -248,7 +249,7 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
         </div>
 
         <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
-          <div className="min-w-0 text-xs text-slate-500">{url.tags?.length ? `${url.tags.length} tags` : 'No tags yet'}</div>
+          <div className="min-w-0 truncate text-xs text-slate-500">{siteDomain || url.domain || 'Saved link'}</div>
           <div className="flex items-center gap-1.5">
             <Button
               type="button"
@@ -260,29 +261,20 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
             >
               <Link className="h-3.5 w-3.5" />
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-xl text-slate-500 hover:bg-blue-50 hover:text-blue-600"
-              onClick={() => onEdit?.(url)}
-              aria-label="Edit link"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-            <Button type="button" variant="ghost" size="icon" onClick={handleDelete} className="h-8 w-8 rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600" aria-label="Delete link">
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-slate-500 hover:bg-slate-100" aria-label="More actions">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent side="right" align="start" sideOffset={8}>
                 <DropdownMenuItem onClick={handleCopy}>
                   <Copy className="mr-2 h-4 w-4" />
                   {cardSettings.copyFormat === 'markdown' ? 'Copy Markdown' : 'Copy Link'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onEdit?.(url)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit Link
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => openInNewTab ? window.open(normalizedUrl, '_blank') : window.location.assign(normalizedUrl)}>
                   <ExternalLink className="mr-2 h-4 w-4" />
@@ -296,9 +288,13 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
                   <Lock className="mr-2 h-4 w-4" />
                   Move to Vault
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={toggleFavorite} className="text-red-600">
+                <DropdownMenuItem onClick={toggleFavorite}>
                   <Star className="mr-2 h-4 w-4" />
                   {url.isFavorite ? 'Remove Favorite' : 'Mark Favorite'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Link
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

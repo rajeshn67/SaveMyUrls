@@ -170,13 +170,6 @@ button:disabled {
   box-shadow: none;
 }
 
-.suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.suggestions button,
 .ghost-button {
   min-height: 30px;
   border: 1px solid var(--line);
@@ -186,17 +179,11 @@ button:disabled {
   font-size: 12px;
 }
 
-.suggestions button {
-  padding: 0 10px;
-  border-radius: 999px;
-}
-
 .ghost-button {
   width: 100%;
   border-radius: 10px;
 }
 
-.suggestions button:hover,
 .ghost-button:hover {
   background: #d8eeff;
   box-shadow: none;

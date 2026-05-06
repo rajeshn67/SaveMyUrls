@@ -50,7 +50,7 @@ const ensureVaultAccess = async (userId, password) => {
 // Create URL
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { title, url, description, category, tags } = req.body;
+    const { title, url, description, category } = req.body;
     const preview = await getLinkPreview(url);
     const normalizedCategory = normalizeCategoryName(category);
 
@@ -60,7 +60,6 @@ router.post('/', authenticate, async (req, res) => {
       url: preview.normalizedUrl || url,
       description,
       category: normalizedCategory,
-      tags: tags || [],
       thumbnail: preview.thumbnail || undefined,
       domain: preview.domain,
     });
@@ -76,7 +75,7 @@ router.post('/', authenticate, async (req, res) => {
 // Create secret URL
 router.post('/secret', authenticate, async (req, res) => {
   try {
-    const { title, url, category, password, tags } = req.body;
+    const { title, url, category, password } = req.body;
     const trimmedPassword = (password || '').trim();
 
     if (!trimmedPassword) {
@@ -98,7 +97,6 @@ router.post('/secret', authenticate, async (req, res) => {
       title,
       url: preview.normalizedUrl || url,
       category: normalizedCategory,
-      tags: tags || [],
       isSecret: true,
       secretPassword,
       thumbnail: preview.thumbnail || undefined,
@@ -452,7 +450,7 @@ router.get('/:id', authenticate, async (req, res) => {
 // Update URL
 router.put('/:id', authenticate, async (req, res) => {
   try {
-    const { title, description, category, tags, isFavorite, url: incomingUrl } = req.body;
+    const { title, description, category, isFavorite, url: incomingUrl } = req.body;
     const normalizedCategory = normalizeCategoryName(category);
 
     let previewUpdate = {};
@@ -467,7 +465,7 @@ router.put('/:id', authenticate, async (req, res) => {
 
     const updatedUrl = await URL.findOneAndUpdate(
       { _id: req.params.id, userId: req.userId, isSecret: { $ne: true } },
-      { title, description, category: normalizedCategory, tags, isFavorite, ...previewUpdate },
+      { title, description, category: normalizedCategory, isFavorite, ...previewUpdate },
       { new: true }
     );
 

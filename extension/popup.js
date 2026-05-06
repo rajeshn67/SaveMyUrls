@@ -22,8 +22,6 @@ const elements = {
   logoutButton: document.getElementById('logoutButton'),
   tabTitle: document.getElementById('tabTitle'),
   tabUrl: document.getElementById('tabUrl'),
-  category: document.getElementById('category'),
-  tags: document.getElementById('tags'),
   privateVault: document.getElementById('privateVault'),
   vaultPassword: document.getElementById('vaultPassword'),
   vaultPasswordWrap: document.getElementById('vaultPasswordWrap'),
@@ -52,12 +50,6 @@ const clearStatus = () => {
   elements.status.textContent = '';
   elements.status.className = 'status';
 };
-
-const parseTags = (value) =>
-  value
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean);
 
 const normalizeUrl = (value) => {
   try {
@@ -199,8 +191,7 @@ const handleSave = async (event) => {
     const body = {
       title: state.currentTab.title || state.currentTab.url,
       url: state.currentTab.url,
-      category: elements.category.value.trim() || 'uncategorized',
-      tags: parseTags(elements.tags.value),
+      category: 'By extension',
     };
 
     const endpoint = elements.privateVault.checked ? '/links/secret' : '/links';
@@ -214,7 +205,6 @@ const handleSave = async (event) => {
     });
 
     showStatus('URL Saved Successfully ✅', 'success');
-    elements.tags.value = '';
     elements.vaultPassword.value = '';
   } catch (error) {
     if (error.status === 401) {
@@ -245,12 +235,6 @@ const initialize = async () => {
   elements.logoutButton.addEventListener('click', handleLogout);
   elements.privateVault.addEventListener('change', () => {
     elements.vaultPasswordWrap.hidden = !elements.privateVault.checked;
-  });
-
-  document.querySelectorAll('[data-category]').forEach((button) => {
-    button.addEventListener('click', () => {
-      elements.category.value = button.dataset.category;
-    });
   });
 
   await renderAuthState();
