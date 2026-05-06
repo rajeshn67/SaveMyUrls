@@ -102,10 +102,12 @@ const renderAuthState = async () => {
   elements.saveView.hidden = !state.token;
 
   if (!state.token) {
+    elements.loginView.parentElement.insertBefore(elements.status, elements.loginView);
     elements.sessionLabel.textContent = 'Log in to save links';
     return;
   }
 
+  elements.saveView.insertBefore(elements.status, elements.saveForm);
   elements.sessionLabel.textContent = state.user?.email || 'Ready to save';
   state.currentTab = await getCurrentTab();
 

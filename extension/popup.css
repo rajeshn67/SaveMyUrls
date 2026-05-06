@@ -16,10 +16,22 @@
   box-sizing: border-box;
 }
 
+html {
+  width: 380px;
+  min-width: 380px;
+  max-width: 380px;
+  overflow-x: hidden;
+}
+
 body {
-  width: 360px;
+  width: 380px;
+  min-width: 380px;
+  max-width: 380px;
   min-height: 420px;
+  max-height: 100vh;
   margin: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: linear-gradient(180deg, #f5fbff 0%, #ffffff 54%);
   color: var(--text);
 }
@@ -30,6 +42,8 @@ input {
 }
 
 .popup-shell {
+  width: 100%;
+  min-width: 0;
   padding: 18px;
 }
 
@@ -37,11 +51,13 @@ input {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
   margin-bottom: 16px;
 }
 
 .brand-mark {
   display: grid;
+  flex: 0 0 auto;
   width: 42px;
   height: 42px;
   place-items: center;
@@ -70,17 +86,24 @@ h1 {
 }
 
 .brand p {
+  overflow: hidden;
   margin-top: 2px;
   font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stack {
   display: grid;
   gap: 12px;
+  min-width: 0;
 }
 
 .card,
 .tab-card {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.92);
@@ -109,12 +132,14 @@ h2 {
   margin-bottom: 6px;
   font-size: 15px;
   line-height: 1.35;
+  overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
 .url {
   overflow: hidden;
+  max-width: 100%;
   font-size: 12px;
   line-height: 1.35;
   text-overflow: ellipsis;
@@ -124,6 +149,7 @@ h2 {
 label {
   display: grid;
   gap: 7px;
+  min-width: 0;
   color: #26384d;
   font-size: 12px;
   font-weight: 700;
@@ -131,6 +157,7 @@ label {
 
 input {
   width: 100%;
+  min-width: 0;
   min-height: 40px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -147,6 +174,8 @@ input:focus {
 }
 
 button {
+  width: 100%;
+  min-width: 0;
   min-height: 42px;
   border: 0;
   border-radius: 10px;
@@ -192,8 +221,9 @@ button:disabled {
 .toggle-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
+  min-width: 0;
   min-height: 42px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -202,6 +232,7 @@ button:disabled {
 }
 
 .toggle-row input {
+  flex: 0 0 auto;
   width: 18px;
   min-height: 18px;
   accent-color: var(--blue);
@@ -209,10 +240,13 @@ button:disabled {
 
 .toggle-row span {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status {
-  margin-bottom: 12px;
   border-radius: 10px;
   padding: 10px 12px;
   background: var(--blue-soft);
@@ -234,4 +268,30 @@ button:disabled {
 .status.warning {
   background: #fff7df;
   color: var(--warning);
+}
+
+@media (max-width: 340px) {
+  body {
+    min-height: 360px;
+  }
+
+  .popup-shell {
+    padding: 12px;
+  }
+
+  .card,
+  .tab-card {
+    border-radius: 12px;
+    padding: 12px;
+  }
+
+  .brand {
+    gap: 10px;
+  }
+
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+  }
 }

@@ -7,7 +7,7 @@ import type { URL } from '../store/urlsSlice';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { CalendarDays, Pencil, Trash2, Star, Link, Pin, Copy, ExternalLink, Lock, MoreHorizontal, Folder } from 'lucide-react';
+import { CalendarDays, Pencil, Trash2, Star, Pin, Copy, ExternalLink, Lock, MoreHorizontal, Folder } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -220,84 +220,82 @@ export default function LinkCard({ url, onRefresh, onEdit }: LinkCardProps) {
         </div>
       </div>
 
-      <CardContent className={`flex flex-col justify-between p-3 ${isComfortable ? 'min-h-[178px]' : 'min-h-[154px]'}`}>
+      <CardContent className={`p-3 ${isComfortable ? 'min-h-[154px]' : 'min-h-[134px]'}`}>
         <div className="space-y-2">
           {cardSettings.showDescriptions ? (
-            <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
-              <p className={`text-xs leading-5 ${url.description ? 'text-slate-600' : 'text-slate-400'} ${isComfortable ? 'line-clamp-3' : 'line-clamp-2'}`}>
+            <div className="flex min-h-[52px] items-center rounded-xl bg-slate-50 px-2.5 py-1.5">
+              <p className={`line-clamp-2 text-xs leading-5 ${url.description ? 'text-slate-600' : 'text-slate-400'}`}>
                 {descriptionText}
               </p>
             </div>
           ) : null}
 
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="secondary" className="max-w-full rounded-full bg-[#edf3ff] px-2.5 py-1 text-[11px] font-semibold text-[#156fe6]">
-              <Folder className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">{categoryLabel}</span>
-            </Badge>
-            {url.isPinned ? (
-              <Badge variant="secondary" className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-                <Pin className="h-3 w-3" />
-                Pinned
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
+              <Badge variant="secondary" className="max-w-full rounded-full bg-[#edf3ff] px-2.5 py-1 text-[11px] font-semibold text-[#156fe6]">
+                <Folder className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{categoryLabel}</span>
               </Badge>
-            ) : null}
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
-              <CalendarDays className="h-3 w-3" />
-              {getDisplayDate()}
-            </span>
-          </div>
-        </div>
-
-        <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
-          <div className="min-w-0 truncate text-xs text-slate-500">{siteDomain || url.domain || 'Saved link'}</div>
-          <div className="flex items-center gap-1.5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-xl text-slate-500 hover:bg-blue-50 hover:text-blue-600"
-              onClick={() => openInNewTab ? window.open(normalizedUrl, '_blank') : window.location.assign(normalizedUrl)}
-              aria-label="Open link"
-            >
-              <Link className="h-3.5 w-3.5" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-slate-500 hover:bg-slate-100" aria-label="More actions">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="right" align="start" sideOffset={8}>
-                <DropdownMenuItem onClick={handleCopy}>
-                  <Copy className="mr-2 h-4 w-4" />
-                  {cardSettings.copyFormat === 'markdown' ? 'Copy Markdown' : 'Copy Link'}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onEdit?.(url)}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit Link
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => openInNewTab ? window.open(normalizedUrl, '_blank') : window.location.assign(normalizedUrl)}>
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  {openInNewTab ? 'Open in New Tab' : 'Open Link'}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={togglePin}>
-                  <Pin className="mr-2 h-4 w-4" />
-                  {url.isPinned ? 'Unpin from Top' : 'Pin to Top'}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={openVaultDialog}>
-                  <Lock className="mr-2 h-4 w-4" />
-                  Move to Vault
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={toggleFavorite}>
-                  <Star className="mr-2 h-4 w-4" />
-                  {url.isFavorite ? 'Remove Favorite' : 'Mark Favorite'}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleDelete} className="text-red-600">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Link
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+                <CalendarDays className="h-3 w-3" />
+                {getDisplayDate()}
+              </span>
+              {url.isPinned ? (
+                <Badge variant="secondary" className="rounded-full bg-amber-100 px-2 py-1 text-amber-700" title="Pinned">
+                  <Pin className="h-3 w-3" />
+                  <span className="sr-only">Pinned</span>
+                </Badge>
+              ) : null}
+            </div>
+            <div className="flex flex-shrink-0 items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-lg text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+                onClick={() => openInNewTab ? window.open(normalizedUrl, '_blank') : window.location.assign(normalizedUrl)}
+                aria-label="Open link"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-500 hover:bg-slate-100" aria-label="More actions">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="start" sideOffset={8}>
+                  <DropdownMenuItem onClick={handleCopy}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    {cardSettings.copyFormat === 'markdown' ? 'Copy Markdown' : 'Copy Link'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onEdit?.(url)}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit Link
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openInNewTab ? window.open(normalizedUrl, '_blank') : window.location.assign(normalizedUrl)}>
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    {openInNewTab ? 'Open in New Tab' : 'Open Link'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={togglePin}>
+                    <Pin className="mr-2 h-4 w-4" />
+                    {url.isPinned ? 'Unpin from Top' : 'Pin to Top'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={openVaultDialog}>
+                    <Lock className="mr-2 h-4 w-4" />
+                    Move to Vault
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={toggleFavorite}>
+                    <Star className="mr-2 h-4 w-4" />
+                    {url.isFavorite ? 'Remove Favorite' : 'Mark Favorite'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Link
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
         </CardContent>
