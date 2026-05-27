@@ -31,6 +31,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Root route for deployed backend domain
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'SaveMyURLs backend is running' });
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
