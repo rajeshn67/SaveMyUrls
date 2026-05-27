@@ -10,11 +10,24 @@ dotenv.config();
 const app = express();
 
 // Middleware
-const frontendUrl = process.env.FRONTEND_URL || 'https://your-frontend.vercel.app';
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  ...(process.env.ADDITIONAL_ORIGINS?.split(',').map((origin) => origin.trim()) ?? []),
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+].filter(Boolean);
+
 app.use(cors({
-  origin: frontendUrl,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS origin denied: ${origin}`));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
 }));
 app.use(express.json());
 
