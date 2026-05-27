@@ -10,8 +10,9 @@ dotenv.config();
 const app = express();
 
 // Middleware
+const frontendUrl = process.env.FRONTEND_URL || 'https://your-frontend.vercel.app';
 app.use(cors({
-  origin: '*',
+  origin: frontendUrl,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
